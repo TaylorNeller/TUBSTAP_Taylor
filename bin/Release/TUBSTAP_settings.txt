@@ -1,0 +1,6 @@
+ConnectionIP 192.168.10.3
+ConnectionPort 7777
+LimitTime 10
+TOTALWAIT 0
+showingNetLog false
+userName name
