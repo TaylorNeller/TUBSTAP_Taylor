@@ -88,6 +88,7 @@ namespace SimpleWars {
         private int remainingRedNumOfF = 0;
         private int remainingRedNumOfA = 0;
         private int remainingRedNumOfR = 0;
+        private Action firstMove = null;
         #endregion
 
         // コンストラクタ
@@ -207,6 +208,7 @@ namespace SimpleWars {
             remainingRedNumOfR = 0;
             remainingRedNumOfAll = 0;
             remainingBlueNumOfAll = 0;
+            firstMove = null;
         }
 
         // ゲームを実行する
@@ -592,6 +594,10 @@ namespace SimpleWars {
                     act = fPlayers[fPhase].makeAction(copyMap, fPhase, turnStartFlag, gameStartFlag);
                     if (!ActionChecker.isTheActionLegalMove(act, fMap)) {// その行動が合法手であるか？
                         Logger.showDialogMessage("その手は合法でないです．");
+                    }
+
+                    if (firstMove == null) {
+                        firstMove = act;
                     }
 
                     if (act.actionType == Action.ACTIONTYPE_TURNEND) {

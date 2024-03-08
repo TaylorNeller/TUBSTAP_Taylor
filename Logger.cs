@@ -180,7 +180,7 @@ namespace SimpleWars {
             // 外に出力したいとき使用する
             using (StreamWriter w = new StreamWriter(fileName,true)) {        
                 if (writeTitleFlag) {
-                    w.WriteLine("MapName,RedPlayerName,BluePlayerName,BattleCnt,WinCntOfRed,WinCntOfBlue,DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos");
+                    w.WriteLine("MapName,RedPlayerName,BluePlayerName,BattleCnt,WinCntOfRed,WinCntOfBlue,DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos2");
                 }
                 w.WriteLine(mapName + "," + redPlayerName + "," + bluePlayerName + "," + battleCnt + "," 
                     + winCntOfRed[0] + "," + winCntOfBlue[0] + "," + drawCnt + "," + overTurnCnt + ","

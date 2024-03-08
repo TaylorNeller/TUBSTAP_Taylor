@@ -33,7 +33,10 @@ class MapGen {
                         terrain[y][x] = 2;
                     }
                     else {
-                        terrain[y][x] = 1+random.Next(0, 2)*2;
+                        n = 1+random.Next(0, 3)*2;
+                        if n == 6:
+                            n == 5
+                        terrain[y][x] = n
                     }
                 }
             }

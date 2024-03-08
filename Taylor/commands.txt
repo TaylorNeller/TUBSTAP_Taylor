@@ -1,0 +1,2 @@
+bin/Release/SimpleWars.exe user1=AI_Sample_MaxActEval user2=AI_Sample_MaxActEval games=2 output=Taylor/results.csv
+^ doesn't work on linux

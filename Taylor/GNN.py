@@ -5,30 +5,6 @@ from tensorflow.keras.models import Model
 from spektral.layers import GCNConv  # Assuming Spektral for GCN
 
 
-def generate_input_tensors(filename):
-
-    unitNames = ["infantry", "panzer", "cannon", "fighter", "antiair", "attacker"]
-
-
-    # Load the file   
-    with open(filename, 'r') as file:
-        data = file.read()
-    # read MAP[x,x,x,...,x]; lines into map matrix
-    # read UNIT[x,y,typestr,team,hp,moved]; lines into unit list
-    map_matrix = []
-    unit_list = []
-    for line in data.split('\n'):
-        if line.startswith('MAP['):
-            map_matrix.append([int(x) for x in line[4:-2].split(',')])
-        if line.startswith('UNIT['):
-            # read unit data, converting unit type to integer based on index in unitNames
-            unit_data = line[5:-2].split(',')
-            unit_data[2] = unitNames.index(unit_data[2])
-            unit_list.append([int(x) for x in unit_data])
-    print(map_matrix)
-    print(unit_list)
-
-
 
 def setup_model():
     # Define input layers
@@ -64,6 +40,8 @@ def setup_model():
 def train_model(model, input_tensors, output_tensors):
     # Assuming input_tensors and output_tensors are available
     model.fit(input_tensors, output_tensors, epochs=10)
+
+def setup_basic_model():
 
 
 
