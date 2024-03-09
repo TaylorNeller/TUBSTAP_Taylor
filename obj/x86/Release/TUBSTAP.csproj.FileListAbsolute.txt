@@ -60,3 +60,16 @@ C:\Users\Taylor\Downloads\TUBSTAP_src_ver0108\TUBSTAP_src_ver0108\obj\x86\Releas
 C:\Users\Taylor\Downloads\TUBSTAP_src_ver0108\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.Option.resources
 C:\Users\Taylor\Downloads\TUBSTAP_src_ver0108\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.GenerateResource.Cache
 C:\Users\Taylor\Downloads\TUBSTAP_src_ver0108\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.CoreCompileInputs.cache
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\bin\Release\SimpleWars.exe
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\bin\Release\SimpleWars.pdb
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.AutoBattleSettings.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.BattleCheat.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.Settings.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.MainForm.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.Properties.Resources.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.BattleResult.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.Option.resources
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.GenerateResource.cache
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.CoreCompileInputs.cache
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.exe
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.pdb
