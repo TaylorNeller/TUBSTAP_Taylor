@@ -1,9 +1,11 @@
 import os
 import sys
 from Unit import *
+import MapUtils
 
-game_results = {} # formatted {map_id: result}
 game_maps = {} # formatted {map_id: [map_matrix, unit_list]}
+game_move = {} # formatted {map_id: [result, move]}
+# game_data = {} # formatted {map_id: [map_matrix, unit_list, result, move]}
 
 def read_map(filename):
     # find map id (# after genmap)
@@ -38,32 +40,60 @@ def read_all_maps(directory):
         read_map(directory + '/' + map)
 
 def annotate_battle_results(filename):
-    # Load the file
+    # line format (header and example data row):
+    # MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove
+    # ./autobattle/genmap0.tbsmap,1,0,0,2:1:2:1:1:1
     with open(filename, 'r') as file:
-        data = file.read()
-    # drop header from data
-    data = data.split('\n', 1)[1]
-    # line format:
-    # MapName,RedPlayerName,BluePlayerName,BattleCnt,WinCntOfRed,WinCntOfBlue,DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos
-    # ./autobattle/genmap0.tbsmap,Sample_MaxActionEvalFunc,Sample_MaxActionEvalFunc,1,1,0,0,1,1,0,False,False
-    # ./autobattle/genmap0.tbsmap,Sample_MaxActionEvalFunc,Sample_MaxActionEvalFunc,1,0,1,0,1,0,1,False,False
-    # if red wins then blue, first player (red) advantage, if the opposite then blue advantage, if draw then no advantage, if both red or both blue then discard data
-    # process 2 lines at a time
-    for line1, line2 in zip(data.split('\n')[::2], data.split('\n')[1::2]):
-        line1 = line1.split(',')
-        line2 = line2.split(',')
-        # get just number from map file
-        map_id = int(line1[0].split('genmap')[1].split('.')[0])
-        # if red wins then blue, first player (red) advantage, if the opposite then blue advantage, if draw then no advantage, if both red or both blue then discard data
-        if line1[4] == '1' and line1[5] == '0' and line2[4] == '0' and line2[5] == '1':
-            game_results[map_id] = 1
-        elif line1[4] == '0' and line1[5] == '1' and line2[4] == '1' and line2[5] == '0':
-            game_results[map_id] = -1
-        elif line1[4] == '0' and line1[5] == '0' and line2[4] == '0' and line2[5] == '0':
-            game_results[map_id] = 0
-        else:
-            game_results[map_id] = 2
-        # print(map_id, game_results[map_id])
+        # drop header from data
+        next(file)
+
+        for line in file:
+            data = line.strip().split(',')
+            map_name = data[0]
+            win_cnt_red = int(data[1])
+            win_cnt_blue = int(data[2])
+            # draw_cnt = int(data[3])
+            move = data[4].split(':')
+            
+            map_id = int(map_name.split('genmap')[1].split('.')[0])
+            
+            result = 0
+            if win_cnt_red > win_cnt_blue:
+                result = 1
+            elif win_cnt_blue > win_cnt_red:
+                result = -1
+            
+            # find direction of attack in move
+            dirs = [(0,0), (1,0), (0,1), (-1,0), (0,-1)]
+            dx = int(move[4]) - int(move[2])
+            dy = int(move[5]) - int(move[3])
+            dir = dirs.index((dx,dy))
+
+            move = [int(move[0]), int(move[1]), int(move[2]), int(move[3]), dir]
+            
+            game_move[map_id] = [result, move]
+
+
+def load_gcn_matrices():
+    # Load the data from the file
+    read_all_maps('../bin/Release/autobattle')
+    annotate_battle_results('Autobattle20240309.csv')
+
+    data = []
+    labels = []
+    # for each map, generate input data row for data and labels
+    for map_id in game_maps:
+        map_matrix = game_maps[map_id][0]
+        unit_list = game_maps[map_id][1]
+        result = game_move[map_id][0]
+        move = game_move[map_id][1]
+
+        # generate input data row for data and labels
+        input_data = MapUtils.create_gcn_input(unit_list, map_matrix, 6*2) # max units on map = 12
+        data.append(input_data)
+        labels.append(result)
+
+    return data, labels
 
 
 if __name__ == '__main__':
@@ -71,5 +101,5 @@ if __name__ == '__main__':
     read_all_maps('../bin/Release/autobattle')
     # annotate results from given file in arguments and print results
     annotate_battle_results(sys.argv[1])
-    print(game_results)
+    print(game_move)
     # print(game_maps)

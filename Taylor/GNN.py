@@ -6,6 +6,7 @@ from spektral.layers import GCNConv  # Assuming Spektral for GCN
 
 
 
+
 def setup_model():
     # Define input layers
     input_tensor_cnn = Input(shape=(64,))
@@ -41,10 +42,7 @@ def train_model(model, input_tensors, output_tensors):
     # Assuming input_tensors and output_tensors are available
     model.fit(input_tensors, output_tensors, epochs=10)
 
-def setup_basic_model():
-
-
 
 # files_and_directories = os.listdir('.')
 # print(files_and_directories)
-generate_input_tensors('Taylor/generated_maps/genmap1.tbsmap')
+# generate_input_tensors('Taylor/generated_maps/genmap1.tbsmap')

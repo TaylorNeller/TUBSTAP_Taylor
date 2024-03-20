@@ -89,6 +89,7 @@ namespace SimpleWars {
         private int remainingRedNumOfA = 0;
         private int remainingRedNumOfR = 0;
         private Action firstMove = null;
+        private string debugString = "<none>";
         #endregion
 
         // コンストラクタ
@@ -151,6 +152,8 @@ namespace SimpleWars {
                 makeRandomNoise();// 対戦マップにノイズを加える
                 fMap.setTurnCount(0);
             }
+            firstMove = null;
+            debugString = "<none>";
             
             fPhase = fMap.getTurnCount() % 2;
             fSgfManager.setInitializeMap(fMap);// マップの初期状態をSGFManagerに保存しておく
@@ -208,7 +211,6 @@ namespace SimpleWars {
             remainingRedNumOfR = 0;
             remainingRedNumOfAll = 0;
             remainingBlueNumOfAll = 0;
-            firstMove = null;
         }
 
         // ゲームを実行する
@@ -225,28 +227,32 @@ namespace SimpleWars {
                     if (isAllUnitDead() == true||fMap.getTurnCount() == fMap.getTurnLimit()||fResignationFlag>=0) {
                         gameEndPhase();
                         //対戦ログを保存
-                        Logger.saveCombatLog(fAutoBattleCombatLogFileName, winTeam, fResignationFlag, fMap.getTurnCount(), attackCnt_0to5_Red, attackCnt_0to5_Blue, attackCnt_6to11_Red, attackCnt_6to11_Blue,
-                            remainingBlueNumOfAll, remainingRedNumOfAll,
-                            remainingBlueNumOfF, remainingBlueNumOfA, remainingBlueNumOfP, remainingBlueNumOfU, remainingBlueNumOfR, remainingBlueNumOfI,
-                            remainingRedNumOfF, remainingRedNumOfA, remainingRedNumOfP, remainingRedNumOfU, remainingRedNumOfR, remainingRedNumOfI);
+                        // Logger.saveCombatLog(fAutoBattleCombatLogFileName, winTeam, fResignationFlag, fMap.getTurnCount(), attackCnt_0to5_Red, attackCnt_0to5_Blue, attackCnt_6to11_Red, attackCnt_6to11_Blue,
+                        //     remainingBlueNumOfAll, remainingRedNumOfAll,
+                        //     remainingBlueNumOfF, remainingBlueNumOfA, remainingBlueNumOfP, remainingBlueNumOfU, remainingBlueNumOfR, remainingBlueNumOfI,
+                        //     remainingRedNumOfF, remainingRedNumOfA, remainingRedNumOfP, remainingRedNumOfU, remainingRedNumOfR, remainingRedNumOfI);
                         newGame();
                     }
 
                     // 指定の回数の対戦実験が行われている場合
-                    if (battleCntOfNow == AutoBattleSettings.NumberOfGamesPerMap) {
-                        if (fMap.reverse) {
-                            Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
-                                fPlayers[0].getName(), fPlayers[1].getName(), AutoBattleSettings.NumberOfGamesPerMap, 
-                                winCntOfRed, winCntOfBlue, drawGameCnt, overMaxTurnCnt,
-                                winCntOfRed_latterHalf, winCntOfBlue_latterHalf, 
-                                drawGameCnt_latterHalf, overMaxTurnCnt_latterHalf
-                                );
-                        }
-                        else {
-                            Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
+                    if (battleCntOfNow == AutoBattleSettings.NumberOfGamesPerMap/2) { // CHANGED THIS: NOW IT DOES NOT RUN GAMES FOR THE AIS SWITCHED
+                        // if (fMap.reverse) {
+                        //     Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
+                        //         fPlayers[0].getName(), fPlayers[1].getName(), AutoBattleSettings.NumberOfGamesPerMap, 
+                        //         winCntOfRed, winCntOfBlue, drawGameCnt, overMaxTurnCnt,
+                        //         winCntOfRed_latterHalf, winCntOfBlue_latterHalf, 
+                        //         drawGameCnt_latterHalf, overMaxTurnCnt_latterHalf, firstMove, debugString
+                        //         );
+                        // }
+                        // else {
+                        //     Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
+                        //     fPlayers[0].getName(), fPlayers[1].getName(),
+                        //     AutoBattleSettings.NumberOfGamesPerMap, winCntOfRed, winCntOfBlue, drawGameCnt, overMaxTurnCnt, firstMove, debugString);
+                        // }
+                        Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
                             fPlayers[0].getName(), fPlayers[1].getName(),
-                            AutoBattleSettings.NumberOfGamesPerMap, winCntOfRed, winCntOfBlue, drawGameCnt, overMaxTurnCnt);
-                        }
+                            AutoBattleSettings.NumberOfGamesPerMap, winCntOfRed, winCntOfBlue, drawGameCnt, overMaxTurnCnt, firstMove, debugString);
+                        break;
                     }
                 }
             } else {//HumanPlayer対AI または　AI対AIの通常対戦モードのケース
@@ -595,11 +601,6 @@ namespace SimpleWars {
                     if (!ActionChecker.isTheActionLegalMove(act, fMap)) {// その行動が合法手であるか？
                         Logger.showDialogMessage("その手は合法でないです．");
                     }
-
-                    if (firstMove == null) {
-                        firstMove = act;
-                    }
-
                     if (act.actionType == Action.ACTIONTYPE_TURNEND) {
                         turnEndFlag = true;
                     }
@@ -609,10 +610,14 @@ namespace SimpleWars {
                         fResignationFlag = teamColor;
                     }
                 }
-
                 if (turnEndFlag == true) {
                     Unit u = fMap.getUnitsList(fPhase, false, true, false)[0];
                     act = Action.createMoveOnlyAction(u, u.getXpos(), u.getYpos());
+                }
+
+                // debugString = debugString+".";
+                if (firstMove == null) {
+                    firstMove = act;
                 }
 
                 SGFManager.recordComment();// SGFManagerで，棋譜にコメントを保存する

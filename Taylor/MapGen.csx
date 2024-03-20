@@ -11,6 +11,7 @@ class MapGen {
         Random random = new Random();
         int nRed = 6;  
         int nBlue = 6;
+        int nIters = 50;
 
         // generate terrain
         int[][] terrain = new int[height][];
@@ -33,10 +34,11 @@ class MapGen {
                         terrain[y][x] = 2;
                     }
                     else {
-                        n = 1+random.Next(0, 3)*2;
-                        if n == 6:
-                            n == 5
-                        terrain[y][x] = n
+                        int n = 1+random.Next(0, 3)*2;
+                        if (n == 6) {
+                            n = 5;
+                        }
+                        terrain[y][x] = n;
                     }
                 }
             }
@@ -44,7 +46,7 @@ class MapGen {
 
         // generate units
         // unit array structure: [[x,y,type,team,hp,isExhausted],...]
-        string[] unitNames = new string[] {"infantry", "panzer", "cannon", "fighter", "antiair", "attacker"};
+        string[] unitNames = new string[] {"attacker", "fighter", "antiair", "infantry", "panzer", "cannon"};
         int[][] allUnits = new int[nRed+nBlue][];
         int exhaustedRed = random.Next(1, nRed/2);
         Console.WriteLine("n "+exhaustedRed);
@@ -52,7 +54,8 @@ class MapGen {
             int x = random.Next(0, width);
             int y = random.Next(0, height);
             // give only 20% chance of attacker/fighter
-            int type = random.Next(0, 20) == 0 ? random.Next(unitNames.Length-2, unitNames.Length) : random.Next(0, unitNames.Length-2);
+            // DOES NOT GENERATE CANNON - NOT SUPPORTED
+            int type = random.Next(0, 5) == 0 ? random.Next(0, 2) : random.Next(2, unitNames.Length-1); 
             int team = 0;
             if (i >= nRed) {
                 team = 1;
@@ -78,23 +81,23 @@ class MapGen {
             // attacker/fighter are air, non-air cannot be on sea (2)
             // non-air/non-infantry cannot be no mountain (4)
             if (terrain[y][x] == 0 || 
-                (terrain[y][x] == 2 && !(type == 3 || type == 5)) || 
-                (terrain[y][x] == 4 && !(type == 0 || type == 3 || type == 5))) {
+                (terrain[y][x] == 2 && !(type == 0 || type == 1)) || 
+                (terrain[y][x] == 4 && !(type == 0 || type == 1 || type == 3))) {
                 i--;
             }
         }
 
-        // approximate unit values: infantry = 1, panzer = 7, cannon = 6, fighter = 10, antiair = 8, attacker = 10
+        // approximate unit values: 
         // Dictionary<string, int> unitValues = new Dictionary<string, int>()
         // {
+        //     { "attacker", 11 },
+        //     { "fighter", 9 },
+        //     { "antiair", 8 },
         //     { "infantry", 1 },
         //     { "panzer", 7 },
-        //     { "cannon", 6 },
-        //     { "fighter", 10 },
-        //     { "antiair", 8 },
-        //     { "attacker", 10 }
+        //     { "cannon", 6 }
         // };
-        int[] unitValues = new int[] {1, 7, 6, 10, 8, 10};
+        int[] unitValues = new int[] {11, 9, 8, 1, 7, 6};
         
         // stochastically balance teams by modifying hp (target 80% lower team full unit value)
         double targetPercent = .8;
@@ -111,23 +114,29 @@ class MapGen {
         }
 
         // stochastically balance both teams until within 5% of target (or 100 iterations)
-        int iter = 0;
-        while (Math.Abs(teamValues[0] - targetValue) > .05*targetValue && Math.Abs(teamValues[1] - targetValue) > .05*targetValue && iter < 100) {
-            int unit = random.Next(0, nRed+nBlue);
-            if (teamValues[allUnits[unit][3]] > targetValue) {
-                if (allUnits[unit][4] > 1) {
-                    allUnits[unit][4]--;
-                    teamValues[allUnits[unit][3]] -= unitValues[allUnits[unit][2]]*.1;
+        for (int team = 0; team <= 1; team++) {
+            int iter = 0;
+            while (Math.Abs(teamValues[team] - targetValue) > .05*targetValue && iter < nIters) {
+                int unit = random.Next(0, nRed);
+                if (team == 1) {
+                    unit = random.Next(0, nBlue)+nRed;
                 }
-            }
-            else {
-                if (allUnits[unit][4] < 10) {
-                    allUnits[unit][4]++;
-                    teamValues[allUnits[unit][3]] += unitValues[allUnits[unit][2]]*.1;
+                if (teamValues[team] > targetValue) {
+                    if (allUnits[unit][4] > 1) {
+                        allUnits[unit][4]--;
+                        teamValues[team] -= unitValues[allUnits[unit][2]]*.1;
+                    }
                 }
-            }
-            iter++;
+                else {
+                    if (allUnits[unit][4] < 10) {
+                        allUnits[unit][4]++;
+                        teamValues[team] += unitValues[allUnits[unit][2]]*.1;
+                    }
+                }
+                iter++;
+            }   
         }
+        
 
         Console.WriteLine(teamValues[0]);
         Console.WriteLine(teamValues[1]);

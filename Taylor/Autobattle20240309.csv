@@ -1,0 +1,11 @@
+MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove
+./autobattle/genmap0.tbsmap,1,0,0,2:1:2:1:1:1
+./autobattle/genmap1.tbsmap,1,0,0,5:5:4:3:5:3
+./autobattle/genmap2.tbsmap,0,1,0,5:1:2:2:1:2
+./autobattle/genmap3.tbsmap,1,0,0,4:1:5:5:4:5
+./autobattle/genmap4.tbsmap,0,1,0,3:3:4:1:5:1
+./autobattle/genmap5.tbsmap,0,0,1,5:6:4:2:3:2
+./autobattle/genmap6.tbsmap,1,0,0,3:6:6:6:5:6
+./autobattle/genmap7.tbsmap,0,1,0,5:6:3:2:3:1
+./autobattle/genmap8.tbsmap,0,0,1,5:3:5:4:6:4
+./autobattle/genmap9.tbsmap,0,1,0,2:3:2:6:1:6

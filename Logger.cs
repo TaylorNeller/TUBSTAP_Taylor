@@ -223,7 +223,7 @@ namespace SimpleWars {
                 if (writeTitleFlag) {
                     w.WriteLine("MapName,RedPlayerName,BluePlayerName,BattleCnt,"+
                         "WinCntOfRed,WinCntOfBlue,"+
-                    "DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos");
+                    "DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos1");
                 }
                 //先手後手が入れ替わる前，前半戦の記録
                 w.WriteLine(mapName + "," + redPlayerName + "," + bluePlayerName + "," + (battleCnt/2) + ","
@@ -276,6 +276,60 @@ namespace SimpleWars {
                 str += Environment.NewLine;
             }
             MessageBox.Show(str);
+        }
+
+
+        // added with 'FirstMove'
+        public static void showAutoBattleResult(string fileName, string mapName, string redPlayerName, string bluePlayerName, int battleCnt, int[] winCntOfRed, 
+                int[] winCntOfBlue, int drawCnt, int overTurnCnt, Action firstMove, string debugStr) {
+            bool writeTitleFlag = false;
+            if (!System.IO.File.Exists(fileName)) {
+                writeTitleFlag = true;
+            }
+
+            // 外に出力したいとき使用する
+            using (StreamWriter w = new StreamWriter(fileName,true)) {    
+                // w.WriteLine("idk");    
+                if (writeTitleFlag) {
+                    w.WriteLine("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove");
+                }
+                w.WriteLine(mapName + "," + winCntOfRed[0] + "," + winCntOfBlue[0] + "," + drawCnt + "," + firstMove.ToString());
+            }
+        }
+
+        // added with 'FirstMove'
+        public static void showAutoBattleResult(string fileName, string mapName, 
+            string redPlayerName, string bluePlayerName, int battleCnt, 
+            int[] winCntOfRed, int[] winCntOfBlue, int drawCnt, int overTurnCnt,
+            int[] winCntOfRed_latter, int[] winCntOfBlue_latter, int drawCnt_latter, int overTurnCnt_latter, Action firstMove, string debugStr
+            ) {
+            bool writeTitleFlag = false;
+            if (!System.IO.File.Exists(fileName)) {
+                writeTitleFlag = true;
+            }
+
+            // 外に出力したいとき使用する
+            using (StreamWriter w = new StreamWriter(fileName, true)) {
+                if (writeTitleFlag) {
+                    w.WriteLine("MapName,RedPlayerName,BluePlayerName,BattleCnt,"+
+                        "WinCntOfRed,WinCntOfBlue,"+
+                    "DrawCnt,OverTrunCnt,FirstMove,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos1");
+                }
+                // w.WriteLine(debugStr);
+                
+                //先手後手が入れ替わる前，前半戦の記録
+                w.WriteLine(mapName + "," + redPlayerName + "," + bluePlayerName + "," + (battleCnt/2) + ","
+                    + winCntOfRed[0] + "," + winCntOfBlue[0] + "," 
+                    + drawCnt + "," + overTurnCnt + "," + firstMove.ToString() + ","
+                    + winCntOfRed[1] + "," + winCntOfBlue[1] + ","
+                    + AutoBattleSettings.IsHPRandomlyDecreased.ToString() + "," + AutoBattleSettings.IsPositionRandomlyMoved.ToString());
+                //先手後手が入れ替わった後半戦の記録
+                w.WriteLine(mapName + "," + redPlayerName + "," + bluePlayerName + "," + ((battleCnt + 1) / 2) + ","
+                    + winCntOfRed_latter[0] + "," + winCntOfBlue_latter[0] + "," 
+                    + drawCnt_latter + "," + overTurnCnt_latter + "," + firstMove.ToString() + ","
+                    + winCntOfRed_latter[1] + "," + winCntOfBlue_latter[1] + ","
+                    + AutoBattleSettings.IsHPRandomlyDecreased.ToString() + "," + AutoBattleSettings.IsPositionRandomlyMoved.ToString());
+            }
         }
     }
 }

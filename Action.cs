@@ -144,6 +144,10 @@ namespace SimpleWars
             return str;
         }
 
+        public string ToString() {
+            return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.attackXpos + ":" + this.attackYpos;
+        }
+
         /// <summary>
         /// アクションの内訳をstringで記述
         /// </summary>

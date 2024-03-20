@@ -1,2 +1,6 @@
 bin/Release/SimpleWars.exe user1=AI_Sample_MaxActEval user2=AI_Sample_MaxActEval games=2 output=Taylor/results.csv
 ^ doesn't work on linux
+
+cd bin/Release/
+.\SimpleWars.exe user1=AI_SampleMaxActEval user2=AI_Sample_MaxActEval output=../gameresults/Autobattle20240309.csv games=2
+^ this works on windows
