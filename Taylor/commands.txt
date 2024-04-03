@@ -2,5 +2,5 @@ bin/Release/SimpleWars.exe user1=AI_Sample_MaxActEval user2=AI_Sample_MaxActEval
 ^ doesn't work on linux
 
 cd bin/Release/
-.\SimpleWars.exe user1=AI_SampleMaxActEval user2=AI_Sample_MaxActEval output=../gameresults/Autobattle20240309.csv games=2
+.\SimpleWars.exe user1=AI_SampleMaxActEval user2=AI_Sample_MaxActEval output=../gameresults/Autobattle20240401.csv games=2
 ^ this works on windows

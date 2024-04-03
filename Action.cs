@@ -145,7 +145,21 @@ namespace SimpleWars
         }
 
         public string ToString() {
-            return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.attackXpos + ":" + this.attackYpos;
+            if (this.actionType == ACTIONTYPE_MOVEONLY) {
+                return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.destinationXpos + ":" + this.destinationYpos;
+            }
+            else if (this.actionType == ACTIONTYPE_MOVEANDATTACK) {
+                return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.attackXpos + ":" + this.attackYpos;
+            }
+            else if (this.actionType == ACTIONTYPE_TURNEND) {
+                return "TURNEND";
+            }
+            else if (this.actionType == ACTIONTYPE_SURRENDER) {
+                return "SURRENDER";
+            }
+            else {
+                return "UNKNOWN";
+            }
         }
 
         /// <summary>

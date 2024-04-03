@@ -2,7 +2,7 @@ using System;
 using System.IO;
 
 // MapGen.generateMapFile("Taylor/generated_maps/genmap1.tbsmap", 8, 8);
-for (int i = 0; i < 10; i++) {
+for (int i = 0; i < 1000; i++) {
     MapGen.generateMapFile($"bin/Release/autobattle/genmap{i}.tbsmap", 8, 8);
 }
 
