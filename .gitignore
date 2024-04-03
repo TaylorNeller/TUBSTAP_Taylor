@@ -1,3 +1,4 @@
 data/
-bin/
+bin/Release/autobattle/
+bin/Release/
 .mono
