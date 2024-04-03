@@ -67,6 +67,8 @@ def annotate_battle_results(filename):
             dirs = [(0,0), (1,0), (0,1), (-1,0), (0,-1)]
             dx = int(move[4]) - int(move[2])
             dy = int(move[5]) - int(move[3])
+            if (dx,dy) not in dirs:
+                print('map_id =', map_id, 'dx =', dx, 'dy =', dy, 'dirs =', dirs, 'move =', move)
             dir = dirs.index((dx,dy))
 
             move = [int(move[0]), int(move[1]), int(move[2]), int(move[3]), dir]
@@ -75,9 +77,13 @@ def annotate_battle_results(filename):
 
 
 def load_gcn_matrices():
+    autobattle_name = 'Autobattle20240401.csv'
     # Load the data from the file
+    if not os.path.exists(autobattle_name):
+        return None, None
+    
     read_all_maps('../bin/Release/autobattle')
-    annotate_battle_results('Autobattle20240309.csv')
+    annotate_battle_results(autobattle_name)
 
     data = []
     labels = []
@@ -93,6 +99,8 @@ def load_gcn_matrices():
         data.append(input_data)
         labels.append(result)
 
+    # rename autobattle_name file to autobattle_name_processed, e.g. file.csv -> file_processed.csv
+    os.rename(autobattle_name, autobattle_name.split('.')[0] + '_processed.csv')
     return data, labels
 
 
