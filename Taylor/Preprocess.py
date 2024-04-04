@@ -100,7 +100,7 @@ def load_gcn_matrices():
         labels.append(result)
 
     # rename autobattle_name file to autobattle_name_processed, e.g. file.csv -> file_processed.csv
-    os.rename(autobattle_name, autobattle_name.split('.')[0] + '_processed.csv')
+    # os.rename(autobattle_name, autobattle_name.split('.')[0] + '_processed.csv')
     return data, labels
 
 

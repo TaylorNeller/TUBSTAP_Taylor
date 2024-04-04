@@ -72,8 +72,8 @@ def search_moves(x,y,unit,map,output,team_matrix,movement):
   
 # max_units is the maximum number of units on the map
 # indexes adjacency matrix with unit order in units
-def create_gcn_input(units, map, max_units):
-    # make deistance matrix with manhattan distances between units
+def create_gcn_adjacency(units, map, max_units):
+    # make distance matrix with manhattan distances between units
     man_distance = [[0 for i in range(max_units)] for j in range(max_units)]
     for i in range(len(units)):
         for j in range(len(units)):
@@ -142,7 +142,72 @@ def create_gcn_input(units, map, max_units):
     output = [hp, type, mobility, moved, man_distance, unobstructed_distance, damage]
     return output
     
-            
+# max_units is the maximum number of units on the map
+# indexes adjacency matrix with unit order in units
+def create_gcn_input(units, map, max_units):
+    # make distance matrix with manhattan distances between units
+    man_distance = [[0 for i in range(max_units)] for j in range(max_units)]
+    for i in range(len(units)):
+        for j in range(len(units)):
+            man_distance[i][j] = abs(units[i].x - units[j].x) + abs(units[i].y - units[j].y)
+
+    # setup unobstructed distance matrix, where (i,j) is the distance from unit i to unit j
+    # IMPORTANT: this distance is the distance to the tile of an allied unit, and the distance to the nearest tile of an enemy unit
+    unobstructed_distance = [[0 for i in range(max_units)] for j in range(max_units)]
+    # for each unit, find valid moves and attacks
+    for unit, index in zip(units, range(len(units))):
+        # setup output matrix
+        dist_matrix = [[-1 for i in range(len(map))] for j in range(len(map))]
+
+        # setup team matrix
+        team_matrix = [[-1 for i in range(len(map))] for j in range(len(map))]
+        for u in units:
+            team_matrix[u.x][u.y] = u.team
+        
+        search_moves2(unit.x, unit.y, unit, map, dist_matrix, team_matrix, 0)
+
+        # print("dist_matrix for unit " + str(index) + " at (" + str(unit.x) + ", " + str(unit.y) + "):")
+        # print_matrix(dist_matrix)
+        # fill row of unobstructed distance matrix
+        # start with allied units, then for each enemy unit, see if it is adjacent to a movable location
+        # if so, update unobstructed distance
+        for i in range(len(units)):
+            if units[i].team == unit.team:
+                unobstructed_distance[index][i] = dist_matrix[units[i].x][units[i].y]
+            else:
+                closest = 99
+                for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+                    x = units[i].x + dx
+                    y = units[i].y + dy
+                    if x >= 0 and x < len(map) and y >= 0 and y < len(map) and dist_matrix[x][y] >= 0 and dist_matrix[x][y] < closest:
+                        closest = dist_matrix[x][y]
+                unobstructed_distance[index][i] = closest
+        
+    # make can access matrix, where (i,j) is true if unobstructed distance <= movement and unit i and j are on different teams
+    can_access = [[0 for i in range(max_units)] for j in range(max_units)]
+    for i in range(len(units)):
+        for j in range(len(units)):
+            if unobstructed_distance[i][j] <= units[i].get_movement_capacity() and units[i].team != units[j].team:
+                can_access[i][j] = 1
+
+    # make single matrix for hp, type, mobility, and moved, where the rows are the units and the columns are the features (hp, type,...)
+    feature_matrix = [[0 for i in range(4)] for j in range(max_units)]
+    for i in range(len(units)):
+        feature_matrix[i][0] = units[i].hp
+        feature_matrix[i][1] = units[i].type if units[i].team == 0 else -1 * units[i].type # -type if blue
+        feature_matrix[i][2] = units[i].get_movement_capacity()
+        if (units[i].team == 0): # red team
+            feature_matrix[i][3] = 1 if units[i].moved else 0
+
+    # make damage matrix, where (i,j) is the damage unit i does to unit j
+    damage = [[0 for i in range(max_units)] for j in range(max_units)]
+    for i in range(len(units)):
+        for j in range(len(units)):
+            if units[i].team != units[j].team:
+                damage[i][j] = units[i].calc_dmg(units[j], map[units[j].x][units[j].y])
+
+    output = (can_access, feature_matrix, [man_distance, unobstructed_distance, damage])
+    return output
 
 # searches by increasing movement instead of decreasing
 def search_moves2(x,y,unit,map,searched,team_matrix,movement, max_movement=100):

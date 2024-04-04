@@ -3,69 +3,61 @@ import Preprocess
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import save_model
+from keras.layers import Lambda, Reshape
 from spektral.layers import GCNConv
 import pandas as pd
 import numpy as np
 import random
 
-def create_gcn_model(input_shape):
+def create_gcn_model(adjacency_shape, feature_shape, num_edge_features):
     # Define the GCN model architecture
-    inputs = keras.Input(shape=input_shape)
-    x = GCNConv(32, activation="relu")(inputs)
-    x = GCNConv(64, activation="relu")(x)
-    x = layers.GlobalAveragePooling2D()(x)
+    adjacency_input = keras.Input(shape=adjacency_shape)
+    feature_input = keras.Input(shape=feature_shape)
+    edge_feature_inputs = [keras.Input(shape=adjacency_shape) for _ in range(num_edge_features)]
+    mask_input = keras.Input(shape=(num_nodes,), dtype=tf.float32)
+    
+    # Concatenate the edge feature matrices
+    if num_edge_features > 1:
+        concatenated_edge_features = layers.Concatenate(axis=-1)(edge_feature_inputs)
+    else:
+        concatenated_edge_features = edge_feature_inputs[0]
+    
+    # Convert mask to float32 using a Lambda layer
+    node_mask = Lambda(lambda x: tf.cast(x, tf.float32))(mask_input)
+    node_mask = Reshape((num_nodes, 1))(node_mask)  # Reshape node mask to match the GCN output shape
+    edge_mask = Lambda(lambda x: tf.cast(tf.expand_dims(x, axis=-1) * tf.expand_dims(x, axis=-2), tf.float32))(mask_input)
+    
+    x = GCNConv(32, activation="relu")([feature_input, adjacency_input], mask=[node_mask, edge_mask])
+    x = layers.Concatenate(axis=-1)([x, concatenated_edge_features])
+    x = GCNConv(64, activation="relu")([x, adjacency_input], mask=[node_mask, edge_mask])
+    x = layers.GlobalAveragePooling1D()(x)
     x = layers.Dense(128, activation="relu")(x)
     outputs = layers.Dense(1, activation="tanh")(x)
 
-    model = keras.Model(inputs=inputs, outputs=outputs)
-    return model
+    model = keras.Model(inputs=[adjacency_input, feature_input] + edge_feature_inputs + [mask_input], outputs=outputs)
 
-def train_model(model, data, labels, epochs, batch_size):
     # Compile the model
     model.compile(optimizer="adam", loss="mse", metrics=["accuracy"])
 
-    # Train the model
-    model.fit(data, labels, epochs=epochs, batch_size=batch_size)
+    return model
 
-def evaluate_model(model, data, labels):
+def evaluate_model(model, batch_size):
     # Evaluate the model
-    loss, mae = model.evaluate(data, labels)
+    update_replay_buffer()
+    data, labels = get_sampled_minibatch(batch_size)
+    tensors = convert_to_tensors(data, labels)
+    adjacency_matrices = tensors[0]
+    feature_matrices = tensors[1]
+    edge_feature_tensors = tensors[2]
+    masks = tensors[3]
+    labels = tensors[4]
+
+
+
+    loss, accuracy = model.evaluate([adjacency_matrices, feature_matrices] + edge_feature_tensors + [masks],
+                                    labels)
     print(f"Test Loss: {loss:.4f}")
-    print(f"Test MAE: {mae:.4f}")
-
-def load_gcn_tensors():
-    # Load the data from the file
-    data, labels = Preprocess.load_gcn_matrices()
-    if data is None or labels is None:
-        return None, None
-
-    # Convert data and labels to numpy arrays
-    data = np.array(data, dtype=np.int16)
-    labels = np.array(labels, dtype=np.int8)
-
-    # Reshape data to have the desired format: (num_samples, num_nodes, num_nodes, num_features)
-    num_samples = data.shape[0]
-    num_features = data.shape[1]
-    num_nodes = data.shape[2]
-    data = data.reshape((num_samples, num_features, num_nodes, num_nodes))
-
-    # Convert data and labels to TensorFlow tensors
-    data = tf.convert_to_tensor(data, dtype=tf.int16)
-    labels = tf.convert_to_tensor(labels, dtype=tf.int8)
-
-    return data, labels
-
-# returns data, labels
-# where data is a list of length 3 arrays and labels is a list of 10 random values
-def load_dummy_data():
-    data = []
-    labels = []
-    for i in range(10):
-        # append random 3 length primitive lists with random values in range 1-100, example [3,22,63]
-        data.append([random.randint(1,100) for i in range(3)])
-        # append random value in range 1-100
-        labels.append([random.randint(1,100) for i in range(2)])
-    return data, labels
+    print(f"Test Accuracy: {accuracy:.4f}")
 
 # top of buffer are most recent
 def update_replay_buffer():
@@ -79,24 +71,32 @@ def update_replay_buffer():
     # Load the data from replay_buffer.csv into dataframe, making empty dataframe if there are no columns
     try:
         old_data = pd.read_csv('replay_buffer.csv')
-        old_data = old_data.drop(columns=['Unnamed: 0'], errors='ignore')
-        old_points = old_data.drop(sampled_indices['Index'], axis=0)
+        old_points = old_data.drop(columns=['Unnamed: 0'], errors='ignore')
+        if len(sampled_indices) > 0:
+            old_points = old_points.drop(sampled_indices['Index'], axis=0)
     except:
         old_points = pd.DataFrame()    
     
-    new_data, new_labels = load_gcn_tensors()
+    new_data, new_labels = Preprocess.load_gcn_matrices()
     # new_data, new_labels = load_dummy_data()
+
+    # print('new_data:', new_data)
+    # print('new_labels:', new_labels)
 
     if (new_data is None) or (new_labels is None):
         replay_buffer = old_points
     else:
         new_points = pd.DataFrame()
-        new_points['Data'] = [data.numpy().astype(np.int16).tolist() for data in new_data]
-        new_points['Label'] = new_labels.numpy().astype(np.int8).tolist()
+        new_points['Adjacency'] = [data_point[0] for data_point in new_data]
+        new_points['Feature'] = [data_point[1] for data_point in new_data]
+        new_points['EdgeFeature1'] = [data_point[2][0] for data_point in new_data]
+        new_points['EdgeFeature2'] = [data_point[2][1] for data_point in new_data]
+        new_points['EdgeFeature3'] = [data_point[2][2] for data_point in new_data]
+        new_points['Label'] = new_labels
 
         # append new_data to old_data
         replay_buffer = pd.concat([new_points, old_points], ignore_index=True)
-        # remove oldest data if buffer is fulL (points towards end of datframe are oldest)
+        # remove oldest data if buffer is full (points towards end of dataframe are oldest)
         if len(replay_buffer) > buffer_size:
             replay_buffer = replay_buffer.head(buffer_size)
 
@@ -107,7 +107,7 @@ def update_replay_buffer():
     sampled_indices = pd.DataFrame()
     sampled_indices.to_csv('sampled_indices.csv')
 
-def get_sampled_minibatch(minibatch_size=4):
+def get_sampled_minibatch(minibatch_size):
     # Load the data from replay_buffer.csv into dataframe
     replay_buffer = pd.read_csv('replay_buffer.csv')
 
@@ -122,27 +122,63 @@ def get_sampled_minibatch(minibatch_size=4):
     sampled_indices.to_csv('sampled_indices.csv')
 
     sampled_points = sampled_points.drop(columns=['Unnamed: 0'], errors='ignore')
+    sampled_data = sampled_points.drop(columns=['Label'])
+    label_column = sampled_points['Label']
 
-    # convert to tensor
-    data_list = [np.array(eval(str(data)), dtype=np.int16).reshape(input_shape) for data in sampled_points['Data']]
-    label_list = [np.int8(eval(str(label))) for label in sampled_points['Label']]
+    return sampled_data, label_column
 
-    # Stack data and labels into separate tensors
-    data_tensor = tf.convert_to_tensor(data_list, dtype=tf.int16)
-    label_tensor = tf.convert_to_tensor(label_list, dtype=tf.int8)
+def convert_to_tensors(data_column, label_column):
+    # Prepare the data
+    adjacency_matrices = []
+    feature_matrices = []
+    edge_feature_matrices = [[] for _ in range(3)]  # Assuming 3 edge features
+    masks = []
 
-    return data_tensor, label_tensor
+    for _, data_point in data_column.iterrows():
+        adjacency_matrix = np.array(eval(data_point['Adjacency']))
+        feature_matrix = np.array(eval(data_point['Feature']))
+        edge_features = [np.array(eval(data_point[f'EdgeFeature{i+1}'])) for i in range(3)]
+
+        mask = np.array([1.0 if feature_matrix[node_id][0] != 0 else 0.0 for node_id in range(num_nodes)])
+
+        adjacency_matrices.append(adjacency_matrix)
+        feature_matrices.append(feature_matrix)
+        for i, edge_feature in enumerate(edge_features):
+            edge_feature_matrices[i].append(edge_feature)
+        masks.append(mask)
+
+
+    # Convert data to TensorFlow tensors
+    adjacency_matrices = tf.convert_to_tensor(adjacency_matrices, dtype=tf.float32)
+    feature_matrices = tf.convert_to_tensor(feature_matrices, dtype=tf.float32)
+    edge_feature_tensors = [tf.convert_to_tensor(edge_feature_matrix, dtype=tf.float32)
+                            for edge_feature_matrix in edge_feature_matrices]
+    labels = tf.convert_to_tensor(label_column.tolist(), dtype=tf.float32)
+    masks = tf.convert_to_tensor(masks, dtype=tf.float32)
+
+    return [adjacency_matrices, feature_matrices, edge_feature_tensors, masks, labels]
+
+def train_model(model, data, epochs, batch_size):
+    adjacency_matrices = data[0]
+    feature_matrices = data[1]
+    edge_feature_tensors = data[2]
+    masks = data[3]
+    labels = data[4]
+
+    # Train the model
+    model.fit([adjacency_matrices, feature_matrices] + edge_feature_tensors + [masks],
+              labels, epochs=epochs, batch_size=batch_size)
 
 # Set the input shape based on the tensor dimensions
-input_shape = (7, 12, 12)
 buffer_size = 1000
 
-def training_loop(model, epochs=1, batch_size=16):
+def training_loop(model, epochs, batch_size):
     for i in range(epochs):
         print(f"Epoch {i+1}/{epochs}")
         update_replay_buffer()
         data, labels = get_sampled_minibatch(batch_size)
-        train_model(model, data, labels, 1, batch_size)
+        input_data = convert_to_tensors(data, labels)
+        train_model(model, input_data, 1, batch_size)
     save_model(model, 'gcn_ver_1.keras')
 
 def test_data():
@@ -154,6 +190,16 @@ def test_data():
     print('data shape:', data.shape)
     print('labels shape:', labels.shape)
 
+# input shapes
+num_nodes = 12
+num_node_features = 4
+num_edge_features = 3 
+
+adjacency_shape = (num_nodes, num_nodes)
+feature_shape = (num_nodes, num_node_features)
+
+
+
 if __name__ == "__main__":
     
     # update_replay_buffer()
@@ -163,8 +209,10 @@ if __name__ == "__main__":
     try:
         model = keras.models.load_model('gcn_ver_1.keras')
     except:
-        model = create_gcn_model(input_shape)
+        model = create_gcn_model(adjacency_shape, feature_shape, num_edge_features)
 
-    training_loop(model)
+
+    training_loop(model, 1, 8)
+
     # # Evaluate the model
-    # evaluate_model(model, data, labels)
+    evaluate_model(model, 8)
