@@ -1,4 +1,4 @@
-data/bin/Release/autobattle/
+data/
 bin/Release/
 .mono/
 .venv/
