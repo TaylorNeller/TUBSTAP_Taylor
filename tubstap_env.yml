@@ -1,0 +1,4 @@
+name: tubstap
+channels:
+  - defaults
+prefix: /home/grads/taylor02/miniconda3/envs/tubstap
