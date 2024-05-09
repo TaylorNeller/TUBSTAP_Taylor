@@ -212,7 +212,7 @@ if __name__ == "__main__":
         model = create_gcn_model(adjacency_shape, feature_shape, num_edge_features)
 
 
-    training_loop(model, 1, 8)
+    training_loop(model, 10, 32)
 
     # # Evaluate the model
-    evaluate_model(model, 8)
+    # evaluate_model(model, 8)
