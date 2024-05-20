@@ -1,5 +1,6 @@
-import Action
-import Logger
+from Action import Action
+from Logger import Logger
+
 
 class DamageCalculator:
     """
@@ -19,7 +20,7 @@ class DamageCalculator:
         else:
             atk_unit = map.get_unit(action.operation_unit_id)
             target_unit = map.get_unit(action.target_unit_id)
-            return DamageCalculator.calculate_damages_unit_map(atk_unit, target_unit, map, action.destination_x_pos, action.destination_y_pos)
+            return DamageCalculator.calculate_damages_unit_map_pos(atk_unit, target_unit, map, action.destination_x_pos, action.destination_y_pos)
 
     @staticmethod
     def calculate_damages_unit_map(atk_unit, target_unit, map):

@@ -1,4 +1,4 @@
-import Action
+from Action import Action
 
 class RangeController:
     # Constants representing up, down, left, right

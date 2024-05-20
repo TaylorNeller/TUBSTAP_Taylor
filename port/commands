@@ -1,0 +1,1 @@
+python GameCLI.py user1=AI_SampleMaxActEval user2=AI_Sample_MaxActEval output=../gameresults/Autobattle20240519.csv games=2

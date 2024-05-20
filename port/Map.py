@@ -1,9 +1,13 @@
-import Consts
-import Action
-import Unit
+from Consts import Consts
+from Action import Action
+from Unit import Unit
+from Logger import SGFManager
+from Logger import Logger
+from DamageCalculator import DamageCalculator
+from Spec import Spec
 
 class Map:
-    def __init__(self, map_file_name=None):
+    def __init__(self, map_file_name=None, reversed=False):
         self.x_size = None
         self.y_size = None
         self.map_field_type = None
@@ -15,7 +19,7 @@ class Map:
         self.turn_limit = None
         self.draw_hp_threshold = None
         self.map_file_name = map_file_name
-        self.reverse = False
+        self.reverse = reversed
 
         if map_file_name is not None:
             self.load_map_file(map_file_name)
@@ -352,3 +356,83 @@ class Map:
             self.num_of_alive_units[1] -= 1
 
         self.map_unit[dead_unit.get_x_pos()][dead_unit.get_y_pos()] = None
+    
+
+    # port of cs function
+    def change_unit_location(self, x, y, selected_unit):
+        temp_x_pos = selected_unit.get_x_pos()
+        temp_y_pos = selected_unit.get_y_pos()
+        if self.map_unit[x][y] is not None and self.map_unit[x][y].get_ID() != selected_unit.get_ID():
+            Logger.show_dialog_message("Map: Bug. Unit attempting to move on top of other unit．")
+        if temp_x_pos == x and temp_y_pos == y:
+            return
+        self.map_unit[x][y] = selected_unit
+        self.map_unit[temp_x_pos][temp_y_pos] = None
+        selected_unit.set_pos(x, y)
+
+    def create_deep_clone(self):
+        """Create a deep copy of the map"""
+        new_map = Map()
+        new_map.x_size = self.x_size
+        new_map.y_size = self.y_size
+        new_map.map_field_type = [row[:] for row in self.map_field_type]
+        new_map.map_unit = [[None] * self.y_size for _ in range(self.x_size)]
+        new_map.max_unit_num = self.max_unit_num.copy()
+        new_map.units = [None] * (self.max_unit_num[0] + self.max_unit_num[1])
+        new_map.num_of_alive_units = self.num_of_alive_units.copy()
+        new_map.turn_count = self.turn_count
+        new_map.turn_limit = self.turn_limit
+        new_map.draw_hp_threshold = self.draw_hp_threshold
+        new_map.map_file_name = self.map_file_name
+        new_map.reverse = self.reverse
+
+        for unit in self.units:
+            if unit is None:
+                continue
+            new_unit = unit.create_deep_clone()
+            new_map.map_unit[new_unit.get_x_pos()][new_unit.get_y_pos()] = new_unit
+            new_map.units[new_unit.id] = new_unit
+
+        return new_map
+    
+    def finish_all_units_action(self, team_color):
+        for unit in self.units:
+            if unit is None:
+                continue
+            if unit.get_team_color() == team_color:
+                unit.set_action_finished(True)
+
+    def enable_units_action(self, team_color):
+        for unit in self.units:
+            if unit is None:
+                continue
+            if unit.get_team_color() == team_color:
+                unit.set_action_finished(False)
+
+    def to_string(self):
+        map_str = "_"
+        for t in range(1, self.x_size - 1):
+            map_str += "_____"
+        map_str += "\r\n"
+
+        for y in range(1, self.y_size - 1):
+            map_str += "|"
+            for x in range(1, self.x_size - 1):
+                if self.map_unit[x][y] is None:
+                    map_str += "    |"
+                    continue
+                if self.map_unit[x][y].get_team_color() == 0:
+                    map_str += "R"
+                else:
+                    map_str += "B"
+                map_str += self.map_unit[x][y].get_mark()
+                map_str += str(self.map_unit[x][y].get_HP()).zfill(2)
+                map_str += "|"
+
+            map_str += "\r\n"
+            map_str += "|"
+            for t in range(1, self.x_size - 1):
+                map_str += "____|"
+            map_str += "\r\n"
+
+        return map_str

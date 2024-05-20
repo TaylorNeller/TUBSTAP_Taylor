@@ -1,4 +1,4 @@
-import Consts
+from Consts import Consts
 
 class Unit:
     def __init__(self, x=None, y=None, id=None, team=None, HP=None, action_finished=None, spec=None):
@@ -10,6 +10,7 @@ class Unit:
             self.team_color = team
             self.spec = spec
             self.action_finished = action_finished == 1
+            self.x_ints = []
         else:
             self.x_pos = None
             self.y_pos = None
@@ -130,15 +131,7 @@ class Unit:
         return f"{self.spec.get_spec_mark()}{self.HP}({self.x_pos}, {self.y_pos})"
 
     def create_deep_clone(self):
-        """Create a deep clone of the unit"""
-        copied = Unit()
-        copied.x_pos = self.x_pos
-        copied.y_pos = self.y_pos
-        copied.id = self.id
-        copied.team_color = self.team_color
-        copied.action_finished = self.action_finished
-        copied.HP = self.HP
-        copied.spec = self.spec
-        if self.x_ints is not None:
-            copied.x_ints = self.x_ints[:]
-        return copied
+        """Create a deep clone of the unit, with all variables including x_ints list"""
+        clone = Unit(self.x_pos, self.y_pos, self.id, self.team_color, self.HP, 1 if self.action_finished else 0, self.spec)
+        clone.set_x_ints(self.x_ints.copy())
+        return clone
