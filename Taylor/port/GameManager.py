@@ -14,6 +14,7 @@ from PlayerList import PlayerList
 
 class GameManager:
     def __init__(self, form, map_file_name):
+        self.sgf_active = False
         self.map_file_name = map_file_name
         self.map = Map(self.map_file_name)
         self.phase = Consts.RED_TEAM
@@ -67,6 +68,9 @@ class GameManager:
 
     def set_sgf_manager(self, sgf_manager):
         self.sgf_manager = sgf_manager
+    
+    def toggle_sgf(self):
+        self.sgf_active = not self.sgf_active
 
     def set_map(self, map):
         self.map = map
@@ -99,7 +103,7 @@ class GameManager:
 
         if self.auto_battle_flag:
             self.map = Map(self.map_file_name)
-            self.make_random_noise()
+            # self.make_random_noise()
             self.map.set_turn_count(0)
 
         self.first_move = None
@@ -110,11 +114,7 @@ class GameManager:
         self.sgf_manager.set_player_name(self.players[0].get_name(), self.players[1].get_name())
         # self.draw_manager.redraw_map(self.map)
 
-        if (self.form.get_player(Consts.RED_TEAM) == PlayerList.NETWORK_PLAYER or
-            self.form.get_player(Consts.BLUE_TEAM) == PlayerList.NETWORK_PLAYER):
-            self.execute_net_game_client()
-        else:
-            self.execute_game()
+        self.execute_game()
 
     def enable_auto_battle(self):
         self.auto_battle_flag = True
@@ -157,45 +157,21 @@ class GameManager:
         self.remaining_blue_num_of_all = 0
 
     def execute_game(self):
-        if self.auto_battle_flag:
-            while self.battle_cnt_of_now < AutoBattleSettings.NumberOfGamesPerMap:
-                self.inquire_ai(self.players[self.phase], self.phase)
+        while self.battle_cnt_of_now < AutoBattleSettings.NumberOfGamesPerMap:
+            self.inquire_ai(self.players[self.phase], self.phase)
 
-                self.change_phase()
+            self.change_phase()
 
-                if (self.is_all_unit_dead() or
-                    self.map.get_turn_count() == self.map.get_turn_limit() or
-                    self.resignation_flag >= 0):
-                    self.game_end_phase()
-                    self.new_game()
-
-                if self.battle_cnt_of_now == AutoBattleSettings.NumberOfGamesPerMap // 2:
-                    Logger.print_battle_result(self.auto_battle_result_file_name, self.map_file_name,
-                                                   self.players[0].get_name(), self.players[1].get_name(),
-                                                   AutoBattleSettings.NumberOfGamesPerMap,
-                                                   self.win_cnt_of_red, self.win_cnt_of_blue,
-                                                   self.draw_game_cnt, self.over_max_turn_cnt,
-                                                   self.first_move, self.debug_string)
-                    break
-        else:
-            while True:
-                if self.form.get_player(self.phase) == PlayerList.HUMAN_PLAYER:
-                    self.inquire_player(self.phase)
-                    if self.game_end_flag:
-                        return
-                    Logger.show_dialog_message("Player turn ended")
-                    self.change_phase()
-                else:
-                    self.inquire_ai(self.players[self.phase], self.phase)
-                    if self.game_end_flag:
-                        return
-                    self.change_phase()
-
-                if (self.is_all_unit_dead() or
-                    self.resignation_flag >= 0 or
-                    self.map.get_turn_count() == self.map.get_turn_limit()):
-                    self.game_end_phase()
-                    break
+            if (self.is_all_unit_dead() or
+                self.map.get_turn_count() == self.map.get_turn_limit() or
+                self.resignation_flag >= 0):
+                self.game_end_phase()
+                self.new_game()
+            if self.battle_cnt_of_now == AutoBattleSettings.NumberOfGamesPerMap // 2:
+                Logger.log_battle_result_file(self.auto_battle_result_file_name, self.map_file_name,
+                                                self.win_cnt_of_red, self.win_cnt_of_blue,
+                                                self.draw_game_cnt, self.first_move, self.debug_string)
+                break
 
     def is_all_unit_dead(self):
         if self.map.get_num_of_alive_color_units(Consts.RED_TEAM) == 0:
@@ -207,7 +183,8 @@ class GameManager:
     def change_phase(self):
         self.map.enable_units_action(self.phase)
         # self.draw_manager.redraw_map(self.map)
-        self.sgf_manager.add_log_of_one_turn(self.phase)
+        if self.sgf_active:
+            self.sgf_manager.add_log_of_one_turn(self.phase)
         self.map.inc_turn_count()
         self.phase = (self.phase + 1) % 2
 
@@ -255,7 +232,8 @@ class GameManager:
             if self.first_move is None:
                 self.first_move = act
 
-            SGFManager.record_comment()
+            if self.sgf_active:
+                SGFManager.record_comment()
 
             # Apply the action to the map
             self.map.change_unit_location(act.destination_x_pos, act.destination_y_pos, self.map.get_unit(act.operation_unit_id))
@@ -266,37 +244,9 @@ class GameManager:
                 self.battle_phase(act)
             # self.draw_manager.redraw_map(self.map)
 
-            self.sgf_manager.add_unit_action(act)
+            if self.sgf_active:
+                self.sgf_manager.add_unit_action(act)
 
-    def inquire_player(self, team_color):
-        self.human_player.turn_end_flag = False
-        self.human_player.resignation_flag = False
-        while True:
-            if self.is_all_unit_dead():
-                self.game_end_phase()
-                # self.draw_manager.redraw_map(self.map)
-                return
-
-            if self.map.is_all_unit_action_finished(self.phase):
-                break
-            act = self.human_player.make_action(self.map, self.phase, True, True)
-            if self.game_end_flag:
-                return
-            if self.human_player.resignation_flag:
-                self.resignation_flag = team_color
-                return
-            self.human_player.init_action()
-            units = self.map.get_units()
-
-            self.battle_phase(act)
-
-            SGFManager.record_comment()
-
-            if units[act.operation_unit_id] is not None:
-                units[act.operation_unit_id].set_action_finished(True)
-            self.sgf_manager.add_unit_action(act)
-
-            # self.draw_manager.redraw_map(self.map)
 
     def game_end_phase(self):
         # Collect the ratio of remaining units

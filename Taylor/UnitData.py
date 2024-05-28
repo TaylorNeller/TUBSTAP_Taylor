@@ -1,4 +1,4 @@
-class Consts:
+class ConstsData:
     unitNames = ["attacker", "fighter", "antiair", "infantry", "panzer", "cannon"]
 
     dmg_matrix = [  [0, 0, 85, 115, 105, 105],
@@ -25,7 +25,7 @@ class Consts:
 
     movement_arr = [7,9,6,3,6,5]
 
-class Unit:
+class UnitData:
 
     def __init__(self, x, y, type, team, hp, moved):
         self.x = x
@@ -36,21 +36,21 @@ class Unit:
         self.moved = moved
     
     def __str__(self):
-        return "Unit: " + Consts.unitNames[self.type] + " at (" + str(self.x) + ", " + str(self.y) + ") with " + str(self.hp) + " hp. Team " + str(self.team) + ". Moved: " + str(self.moved) + "."
+        return "Unit: " + ConstsData.unitNames[self.type] + " at (" + str(self.x) + ", " + str(self.y) + ") with " + str(self.hp) + " hp. Team " + str(self.team) + ". Moved: " + str(self.moved) + "."
     
     def get_name(self):
-        return Consts.unitNames[self.type]
+        return ConstsData.unitNames[self.type]
     
     def get_movement_capacity(self):
-        return Consts.movement_arr[self.type]
+        return ConstsData.movement_arr[self.type]
     
     def move_cost(self, terrain):
-        return Consts.move_matrix[self.type][terrain]
+        return ConstsData.move_matrix[self.type][terrain]
 
     def calc_dmg(self, defender, terrain):
         # taken from calculation in DamageCalculator.cs:
         #      int rawDamage = ((atkPower * atkHP) + 70) / (100 + (targetStars * targetHP));
-        dmg = int((Consts.dmg_matrix[self.type][defender.type] * self.hp + 70) / (100+10*Consts.def_matrix[defender.type][terrain] * defender.hp))
+        dmg = int((ConstsData.dmg_matrix[self.type][defender.type] * self.hp + 70) / (100+10*ConstsData.def_matrix[defender.type][terrain] * defender.hp))
         if dmg > defender.hp:
             dmg = defender.hp
         return dmg

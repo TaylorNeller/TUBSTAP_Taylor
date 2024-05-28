@@ -1,4 +1,4 @@
-from Unit import *
+from UnitData import *
 
 # recursively search for moves
 # input format: 
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     # make 8x8 map full of plains
     map = [[1 for i in range(8)] for j in range(8)]
     # make 6 infantry
-    units = [Unit(4,5,3,0,6,False), Unit(3,4,3,0,7,True), Unit(3,6,3,0,5,False), Unit(3,5,3,1,4,False), Unit(5,5,3,1,6,False), Unit(3,7,3,1,8,False)]
+    units = [UnitData(4,5,3,0,6,False), UnitData(3,4,3,0,7,True), UnitData(3,6,3,0,5,False), UnitData(3,5,3,1,4,False), UnitData(5,5,3,1,6,False), UnitData(3,7,3,1,8,False)]
     
     # test search_moves
 

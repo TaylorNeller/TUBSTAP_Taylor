@@ -1,6 +1,6 @@
 import os
 import sys
-from Unit import *
+from UnitData import *
 import MapUtils
 
 game_maps = {} # formatted {map_id: [map_matrix, unit_list]}
@@ -24,8 +24,8 @@ def read_map(filename):
         if line.startswith('UNIT['):
             # read unit data, converting unit type to integer based on index in unitNames
             unit_data = line[5:-2].split(',')
-            unit_data[2] = Consts.unitNames.index(unit_data[2])
-            unit_list.append(Unit(*[int(x) for x in unit_data]))
+            unit_data[2] = ConstsData.unitNames.index(unit_data[2])
+            unit_list.append(UnitData(*[int(x) for x in unit_data]))
     
     game_maps[map_id] = [map_matrix, unit_list]
 
@@ -76,14 +76,11 @@ def annotate_battle_results(filename):
             game_move[map_id] = [result, move]
 
 
-def load_gcn_matrices():
-    autobattle_name = 'Autobattle20240401.csv'
+def load_gcn_matrices(data_csv):
     # Load the data from the file
-    if not os.path.exists(autobattle_name):
+    if not os.path.exists(data_csv):
+        print('File not found:', data_csv)
         return None, None
-    
-    read_all_maps('../bin/Release/autobattle')
-    annotate_battle_results(autobattle_name)
 
     data = []
     labels = []
@@ -102,6 +99,7 @@ def load_gcn_matrices():
     # rename autobattle_name file to autobattle_name_processed, e.g. file.csv -> file_processed.csv
     # os.rename(autobattle_name, autobattle_name.split('.')[0] + '_processed.csv')
     return data, labels
+
 
 
 if __name__ == '__main__':

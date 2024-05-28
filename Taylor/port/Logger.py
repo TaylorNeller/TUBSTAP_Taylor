@@ -5,23 +5,8 @@ from Action import Action
 
 # from Settings
 class Logger:
-    # s_blue_text_box = None
-    # s_red_text_box = None
-    # s_owner_form = None
-    # s_unit_id_label = None
 
-    # @staticmethod
-    # def set_log_box(owner_form, tbx_blue, tbx_red, lbl):
-    #     """
-    #     Setter
-    #     :param owner_form: Form to display
-    #     :param tbx_blue: Blue text box
-    #     :param tbx_red: Red text box
-    #     """
-    #     Logger.s_owner_form = owner_form
-    #     Logger.s_blue_text_box = tbx_blue
-    #     Logger.s_red_text_box = tbx_red
-    #     Logger.s_unit_id_label = lbl
+    verbose = False
 
     @staticmethod
     def add_log_message(message, team_color):
@@ -42,7 +27,8 @@ class Logger:
         Display string in text box
         :param message: String to display
         """
-        print(message)
+        if Logger.verbose:
+            print(message)
 
     # @staticmethod
     # def netlog(message, team_color):
@@ -192,18 +178,18 @@ class Logger:
     #         result_str += "\n"
     #     messagebox.showinfo("Array Contents", result_str)
 
+    # have persistant file open so no need to reopen it after each function call
+    active_file = None
+
     @staticmethod
-    def show_auto_battle_result_with_first_move(file_name, map_name, red_player_name, blue_player_name, battle_cnt,
-                                                win_cnt_of_red, win_cnt_of_blue, draw_cnt, over_turn_cnt, first_move, debug_str):
+    def log_battle_result_file(file_name, map_name, win_cnt_of_red, win_cnt_of_blue, draw_cnt, first_move, debug_str):
         write_title_flag = False
         if not os.path.exists(file_name):
             write_title_flag = True
-
-        # Use this when you want to output to an external file
-        with open(file_name, 'a') as file:
-            if write_title_flag:
-                file.write("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove\n")
-            file.write(f"{map_name},{win_cnt_of_red[0]},{win_cnt_of_blue[0]},{draw_cnt},{first_move}\n")
+            # make file
+            Logger.active_file = open(file_name, 'w')
+            Logger.active_file.write("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove\n")
+        Logger.active_file.write(f"{map_name},{win_cnt_of_red[0]},{win_cnt_of_blue[0]},{draw_cnt},{first_move}\n")
 
     @staticmethod
     def print_battle_result(file_name, map_name, red_player_name, blue_player_name, battle_cnt,
@@ -232,7 +218,38 @@ class Logger:
                        f"{draw_cnt_latter},{over_turn_cnt_latter},{first_move},"
                        f"{win_cnt_of_red_latter[1]},{win_cnt_of_blue_latter[1]},"
                        f"{AutoBattleSettings.IsHPRandomlyDecreased},{AutoBattleSettings.IsPositionRandomlyMoved}\n")
+    
+    @staticmethod
+    def flush():
+        Logger.active_file.flush()
             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

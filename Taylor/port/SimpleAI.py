@@ -9,6 +9,8 @@ from Player import Player
 from RangeController import RangeController
 from Unit import Unit
 
+logger_active = False
+
 class AI_Sample_MaxActEval(Player):
     # Index for storing the maximum threat of enemy units in Unit object's arbitrary use int[]
     XINDEX_MAXTHREAT = 0
@@ -40,22 +42,26 @@ class AI_Sample_MaxActEval(Player):
         """Determines the action of 1 unit (required public function)"""
         if turn_start:
             self.evaluate_map = [[""]*map.get_y_size() for _ in range(map.get_x_size())]
-            Logger.add_log_message(map.to_string(), team_color)
+            if logger_active:
+                Logger.add_log_message(map.to_string(), team_color)
 
         enemies = map.get_units_list(team_color, False, False, True)  # List of all enemies
 
         # Procedure 1: Calculate and store the maximum attack power from each enemy unit to own units (only moved units)
-        Logger.add_log_message("\r\nThinking start:\r\n Step 1: Calculating threats of enemies\r\n", team_color)
+        if logger_active:
+            Logger.add_log_message("\r\nThinking start:\r\n Step 1: Calculating threats of enemies\r\n", team_color)
         for enemy_unit in enemies:
             damage = self.estimate_max_atk_damage(enemy_unit, map)
-            Logger.add_log_message(f"   max damage from {enemy_unit.to_short_string()} = {damage}\r\n", team_color)
+            if logger_active:
+                Logger.add_log_message(f"   max damage from {enemy_unit.to_short_string()} = {damage}\r\n", team_color)
 
             # Initialize the arbitrary use int of Unit object and store the threat
             enemy_unit.init_x_ints(1)
             enemy_unit.set_x_int(self.XINDEX_MAXTHREAT, damage)
 
         # Procedure 2: If there are own units that can attack, select the action with the maximum evaluation value
-        Logger.add_log_message(" Step 2: Attack\r\n", team_color)
+        if logger_active:
+            Logger.add_log_message(" Step 2: Attack\r\n", team_color)
         atk_actions = AiTools.get_all_attack_actions(team_color, map)  # List of all attack actions
 
         max_atk_act_value = self.MINIMUM_EFFICIENCY_FOR_ATTACK  # Do not attack if below this
@@ -70,7 +76,8 @@ class AI_Sample_MaxActEval(Player):
                 max_action = act
 
         if max_action is not None:
-            Logger.add_log_message(f" Selected = {max_action.to_one_line_string()} Value={max_atk_act_value}\r\n", team_color)
+            if logger_active:
+                Logger.add_log_message(f" Selected = {max_action.to_one_line_string()} Value={max_atk_act_value}\r\n", team_color)
 
             # Update the evaluation value map
             # Since evaluation values only exist for attack actions, do not display evaluations for move actions
@@ -83,12 +90,14 @@ class AI_Sample_MaxActEval(Player):
 
         # Procedure 3: If there are no good attack actions, randomly select a unit and move it
         # Either approach the enemy or stay in advantageous terrain. Does not consider moves to protect allies
-        Logger.add_log_message("   No effective attack.\r\n Step 3: Move.\r\n", team_color)
+        if logger_active:
+            Logger.add_log_message("   No effective attack.\r\n Step 3: Move.\r\n", team_color)
 
         my_units = map.get_units_list(team_color, False, True, False)  # Own units that have not acted
         op_unit = my_units[self.rand.randint(0, len(my_units)-1)]  # Randomly select one
 
-        Logger.add_log_message(f"   Unit {op_unit.to_short_string()} is randomly selected to move.\r\n", team_color)
+        if logger_active:
+            Logger.add_log_message(f"   Unit {op_unit.to_short_string()} is randomly selected to move.\r\n", team_color)
 
         # The movable range of that unit
         movable = RangeController.get_reachable_cells_matrix(op_unit, map)
@@ -119,7 +128,8 @@ class AI_Sample_MaxActEval(Player):
                     score = defense * 5 + effect // (dist + 5)
 
                     if self.DETAILED_LOG:
-                        Logger.add_log_message(f"  -> ({x},{y}) vs {enemy_unit.to_short_string()} score={score}\r\n", team_color)
+                        if logger_active:
+                            Logger.add_log_message(f"  -> ({x},{y}) vs {enemy_unit.to_short_string()} score={score}\r\n", team_color)
 
                     if score > max_score:
                         max_score = score
@@ -130,8 +140,9 @@ class AI_Sample_MaxActEval(Player):
                 matrix_log += f"{local_max_score:4}"
             matrix_log += "\r\n  "
 
-        Logger.add_log_message(matrix_log, team_color)
-        Logger.add_log_message(f"   Selected = {op_unit.to_short_string()} -> ({max_x},{max_y})\r\n", team_color)
+        if logger_active:
+            Logger.add_log_message(matrix_log, team_color)
+            Logger.add_log_message(f"   Selected = {op_unit.to_short_string()} -> ({max_x},{max_y})\r\n", team_color)
         return Action.create_move_only_action(op_unit, max_x, max_y)  # Create and return an action that only moves
 
     @staticmethod
@@ -160,10 +171,11 @@ class AI_Sample_MaxActEval(Player):
         # Desirability of the action (can be negative)
         act_value = (attack_damages[0] * en_value) - (attack_damages[1] * my_value)
 
-        if AI_Sample_MaxActEval.DETAILED_LOG:
-            Logger.add_log_message(f"   total={act_value}, dm={attack_damages[0]} enval={en_value} rvdm={attack_damages[1]} myval={my_value} act={act.to_one_line_string()}\r\n", team_color)
-        else:
-            Logger.add_log_message(f"   score={act_value} {my_unit.to_short_string()}  -> {en_unit.to_short_string()}\r\n", team_color)
+        if logger_active:
+            if AI_Sample_MaxActEval.DETAILED_LOG:
+                Logger.add_log_message(f"   total={act_value}, dm={attack_damages[0]} enval={en_value} rvdm={attack_damages[1]} myval={my_value} act={act.to_one_line_string()}\r\n", team_color)
+            else:
+                Logger.add_log_message(f"   score={act_value} {my_unit.to_short_string()}  -> {en_unit.to_short_string()}\r\n", team_color)
 
         return act_value
 
