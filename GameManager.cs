@@ -232,6 +232,7 @@ namespace SimpleWars {
                         //     remainingBlueNumOfF, remainingBlueNumOfA, remainingBlueNumOfP, remainingBlueNumOfU, remainingBlueNumOfR, remainingBlueNumOfI,
                         //     remainingRedNumOfF, remainingRedNumOfA, remainingRedNumOfP, remainingRedNumOfU, remainingRedNumOfR, remainingRedNumOfI);
                         newGame();
+                        Console.WriteLine("NEW GAME");
                     }
 
                     // 指定の回数の対戦実験が行われている場合
@@ -619,6 +620,7 @@ namespace SimpleWars {
                 if (firstMove == null) {
                     firstMove = act;
                 }
+                Logger.AddTurnRecord(copyMap, act, fPhase);
 
                 SGFManager.recordComment();// SGFManagerで，棋譜にコメントを保存する
 

@@ -73,3 +73,4 @@ C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\TU
 C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.CoreCompileInputs.cache
 C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.exe
 C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\SimpleWars.pdb
+C:\Users\Taylor\OneDrive\Documents\thesis\TUBSTAP_src_ver0108\obj\x86\Release\TUBSTAP.csproj.AssemblyReference.cache

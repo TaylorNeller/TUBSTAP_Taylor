@@ -4,5 +4,5 @@ bin/Release/SimpleWars.exe user1=AI_Sample_MaxActEval user2=AI_Sample_MaxActEval
 
 
 cd bin/Release/
-.\SimpleWars.exe user1=AI_SampleMaxActEval user2=AI_Sample_MaxActEval output=../gameresults/Autobattle20240401.csv games=2
+.\SimpleWars.exe user1=M-UCT user2=M-UCT output=../gameresults/10000results.csv games=2
 ^ this works on windows

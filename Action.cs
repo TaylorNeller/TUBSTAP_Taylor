@@ -146,7 +146,7 @@ namespace SimpleWars
 
         public string ToString() {
             if (this.actionType == ACTIONTYPE_MOVEONLY) {
-                return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.destinationXpos + ":" + this.destinationYpos;
+                return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":-1:-1";
             }
             else if (this.actionType == ACTIONTYPE_MOVEANDATTACK) {
                 return this.fromXpos + ":" + this.fromYpos + ":" + this.destinationXpos + ":" + this.destinationYpos + ":" + this.attackXpos + ":" + this.attackYpos;
@@ -200,5 +200,45 @@ namespace SimpleWars
             copied.X_counterDamage = this.X_counterDamage;
             return copied;
         }
+
+
+
+        //added so action can be used in a dictionary
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            Action other = (Action)obj;
+
+            return actionType == other.actionType &&
+                destinationXpos == other.destinationXpos &&
+                destinationYpos == other.destinationYpos &&
+                operationUnitId == other.operationUnitId &&
+                targetUnitId == other.targetUnitId &&
+                teamColor == other.teamColor &&
+                attackXpos == other.attackXpos &&
+                attackYpos == other.attackYpos &&
+                fromXpos == other.fromXpos &&
+                fromYpos == other.fromYpos;
+        }
+
+        //added so action can be used in a dictionary
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            hash = hash * 23 + actionType.GetHashCode();
+            hash = hash * 23 + destinationXpos.GetHashCode();
+            hash = hash * 23 + destinationYpos.GetHashCode();
+            hash = hash * 23 + operationUnitId.GetHashCode();
+            hash = hash * 23 + targetUnitId.GetHashCode();
+            hash = hash * 23 + teamColor.GetHashCode();
+            hash = hash * 23 + attackXpos.GetHashCode();
+            hash = hash * 23 + attackYpos.GetHashCode();
+            hash = hash * 23 + fromXpos.GetHashCode();
+            hash = hash * 23 + fromYpos.GetHashCode();
+            return hash;
+        }
+
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -38,9 +38,6 @@ namespace SimpleWars {
             Logger.setLogBox(this, BlueLog, RedLog,UnitID);
 			
 
-            //コマンドライン
-            commandlineInterface();
-
             // コンボボックスを初期化
             string[] stFilePathes = GetFilesMostDeep(@"./map/", "*.tbsmap");
             foreach (string stFilePath in stFilePathes) {
@@ -51,6 +48,9 @@ namespace SimpleWars {
             
             PlayerList.initializePlayerListComboBox(comboBox_REDTEAM, comboBox_BLUETEAM);
             if (comboBox_MapFile.Items.Count > 0) comboBox_MapFile.SelectedIndex = 0;// マップ初期化
+
+            //コマンドライン (Initialize ComboBoxes before calling this)
+            commandlineInterface();
         }
 
         //ゲッター
@@ -250,7 +250,7 @@ namespace SimpleWars {
                 }
 
                 //REDTEAMのAI指定．存在しなければSampleAI
-                comboBox_REDTEAM.SelectedIndex = 2;
+                comboBox_REDTEAM.SelectedIndex = 2; // Default to AI_M_UCT (index 2)
                 for (int i = 1; i < PlayerList.sRegisteredPlayerList.Count(); i++) {
                     if (dict["user1"].Equals(PlayerList.getPlayer(i).getName()) == true) {
                         comboBox_REDTEAM.SelectedIndex = i;
@@ -258,7 +258,7 @@ namespace SimpleWars {
                 }
 
                 //BLUETEAMのAI指定．存在しなければSampleAI
-                comboBox_BLUETEAM.SelectedIndex = 2;
+                comboBox_BLUETEAM.SelectedIndex = 2; // Default to AI_M_UCT (index 2)
                 for (int i = 1; i < PlayerList.sRegisteredPlayerList.Count(); i++) {
                     if (dict["user2"].Equals(PlayerList.getPlayer(i).getName()) == true) {
                         comboBox_BLUETEAM.SelectedIndex = i;

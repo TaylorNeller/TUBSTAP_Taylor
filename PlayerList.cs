@@ -13,11 +13,11 @@ namespace SimpleWars {
         public static Player[] sRegisteredPlayerList = new Player[] {
             new HumanPlayer(),           // これは変更しないでください
             new NetworkPlayer(),         // これは変更しないでください
-            new AI_Sample_MaxActEval(),
-            new AI_MSSystem(),
 			new AI_M_UCT(),
-			new AI_M3Lee_hull(),
-            new AI_SatD2()
+            new AI_Sample_MaxActEval(),
+            new AI_RHEA(),
+            new AI_RHCP(),
+            new AI_TBETS()
         };
 
         // デフォルトで対戦させたい 2プレイヤーのインデックスをここに登録する

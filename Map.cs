@@ -560,6 +560,64 @@ namespace SimpleWars {
 
             return copied;
         }
+        
+        /// <summary>
+        /// Copy all data from source map to this map
+        /// </summary>
+        /// <param name="source">Source map to copy from</param>
+        public void copyFrom(Map source) {
+            // Copy field dimensions
+            this.fXsize = source.fXsize;
+            this.fYsize = source.fYsize;
+            
+            // Resize field arrays if needed
+            if (this.fMapFieldType == null || 
+                this.fMapFieldType.GetLength(0) != source.fXsize || 
+                this.fMapFieldType.GetLength(1) != source.fYsize) {
+                this.fMapFieldType = new int[source.fXsize, source.fYsize];
+            }
+            
+            // Copy field types
+            for (int x = 0; x < fXsize; x++) {
+                for (int y = 0; y < fYsize; y++) {
+                    this.fMapFieldType[x, y] = source.fMapFieldType[x, y];
+                }
+            }
+            
+            // Reset and recreate units
+            this.fMapUnit = new Unit[fXsize, fYsize];
+            
+            // Make sure the units array is the right size
+            if (this.fUnits == null || this.fUnits.Length != source.fUnits.Length) {
+                this.fUnits = new Unit[source.fUnits.Length];
+            } else {
+                // Clear existing units if reusing the array
+                for (int i = 0; i < this.fUnits.Length; i++) {
+                    this.fUnits[i] = null;
+                }
+            }
+            
+            // Copy units
+            for (int i = 0; i < source.fUnits.Length; i++) {
+                if (source.fUnits[i] == null) continue;
+                this.fUnits[i] = source.fUnits[i].createDeepClone();
+                
+                int x = this.fUnits[i].getXpos();
+                int y = this.fUnits[i].getYpos();
+                this.fMapUnit[x, y] = this.fUnits[i];
+            }
+            
+            // Copy team unit counts
+            for (int team = 0; team <= 1; team++) {
+                this.fMaxUnitNum[team] = source.fMaxUnitNum[team];
+                this.fNumOfAliveUnits[team] = source.fNumOfAliveUnits[team];
+            }
+            
+            // Copy turn info
+            this.fTurnCount = source.fTurnCount;
+            this.fTurnLimit = source.fTurnLimit;
+            this.fDrawHPThreshold = source.fDrawHPThreshold;
+        }
 
         public string toString() {
             string str;

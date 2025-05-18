@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,26 +27,27 @@ namespace SimpleWars {
             return atkActions;
         }
 
-        public static List<Action> getAllMoveActions(int teamcolor, Map map) {
-            List<Action> moveActions = new List<Action>();
+    public static List<Action> getAllMoveActions(int teamcolor, Map map) {
+        List<Action> moveActions = new List<Action>();
 
-            // 行動可能な自ユニットリスト
-            List<Unit> myMovableUnits = map.getUnitsList(teamcolor, false, true, false);
+        // 行動可能な自ユニットリスト
+        List<Unit> myMovableUnits = map.getUnitsList(teamcolor, false, true, false);
 
-            //行動可能なユニットの移動可能箇所をリストにまとめる
-            foreach (Unit myUnit in myMovableUnits) {
-                bool[,] reachable = RangeController.getReachableCellsMatrix(myUnit, map);
-                for (int i = 0; i < reachable.GetLength(0); i++) {
-                    for (int j = 0; j < reachable.GetLength(1); j++) {
-                        if (reachable[i, j]) {
-                            moveActions.Add(Action.createMoveOnlyAction(myUnit, i, j));
-                        }
+        //行動可能なユニットの移動可能箇所をリストにまとめる
+        foreach (Unit myUnit in myMovableUnits) {
+            bool[,] reachable = RangeController.getReachableCellsMatrix(myUnit, map);
+            for (int i = 0; i < reachable.GetLength(0); i++) {
+                for (int j = 0; j < reachable.GetLength(1); j++) {
+                    // Check if the cell is reachable and not occupied by any unit (except the current unit)
+                    if (reachable[i, j] && (map.getUnit(i, j) == null || map.getUnit(i, j).getID() == myUnit.getID())) {
+                        moveActions.Add(Action.createMoveOnlyAction(myUnit, i, j));
                     }
                 }
             }
-
-            return moveActions;
         }
+
+        return moveActions;
+    }
 
         // operationUnitがtargetUnitに攻撃可能かどうか．ダメージ効果0の場合にはfalseが返る
         public static bool isEffective(Unit operationUnit, Unit targetUnit) {
@@ -81,34 +82,10 @@ namespace SimpleWars {
             {
                 for (int y = 1; y < map.getYsize() - 1; y++)
                 {
-                    if (movable[x, y] == true)
+                    // Check if the cell is reachable and not occupied by any unit (except the current unit)
+                    if (movable[x, y] == true && (map.getUnit(x, y) == null || map.getUnit(x, y).getID() == unit.getID()))
                     {
-                        /*
-                        int exist_flag = 0;
-                        
-                        foreach (Unit enUnit in map.getUnitsList(unit.getTeamColor(), false, false, true))
-                        {
-                            int posX = enUnit.getXpos();// 敵ユニットの位置
-                            int posY = enUnit.getYpos();
-
-                            int[] DX = new int[4] { +1, 0, -1, 0 };
-                            int[] DY = new int[4] { 0, -1, 0, +1 };
-
-                            for (int i = 0; i < 4; i++)
-                            {
-                                if (x + DX[i] == posX && y + DY[i] == posY)
-                                {
-                                    exist_flag = 1;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (exist_flag == 0)
-                        */
                         moveactions.Add(Action.createMoveOnlyAction(unit, x, y));
-
-
                     }
                 }
             }

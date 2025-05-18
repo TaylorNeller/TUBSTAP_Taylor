@@ -14,7 +14,7 @@ namespace SimpleWars
     class AI_M_UCT : Player
     {
         // パラメータ
-        private const int MAX_SIM = 2000;       // 1行動あたりのシミュレーション回数    2016/1/26までは5000回を使用
+        private const int MAX_SIM = 200;       // 1行動あたりのシミュレーション回数    2016/1/26までは5000回を使用
         private const int SIM_SIKI = 10;        // 木探索での子ノードを展開する閾値 3, 5, 10, 20あたり？
         private const double UCB_CONST = 0.15;  // UCB値の特性を定める定数
         //private const float Threshold = 0.5f;

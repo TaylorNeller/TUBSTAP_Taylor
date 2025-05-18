@@ -6,7 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{50F13A2F-7311-49C8-84D3-478BDCCCF7E5}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SimpleWars</RootNamespace>
     <AssemblyName>SimpleWars</AssemblyName>
@@ -57,6 +57,8 @@
     <Compile Include="ActionChecker.cs" />
     <Compile Include="AI\AiTools.cs" />
     <Compile Include="AI\M3Lee\M3_Node.cs" />
+    <Compile Include="AI\M_UCT\AI_RHCP.cs" />
+    <Compile Include="AI\M_UCT\AI_RHEA.cs" />
     <Compile Include="AI\M_UCT\M_Tools.cs" />
     <Compile Include="AI\M3Lee\AI_M3Lee_hull.cs" />
     <Compile Include="AI\AI_MSSystem.cs" />
@@ -78,6 +80,13 @@
     <Compile Include="AI\Sato\SAT_FUNC.cs" />
     <Compile Include="AI\Sato\SAT_FUNC2.cs" />
     <Compile Include="AI\Sato\SAT_RangeController.cs" />
+    <Compile Include="AI\TBETS\AI_TBETS.cs" />
+    <Compile Include="AI\TBETS\TBETSActionGenerator.cs" />
+    <Compile Include="AI\TBETS\TBETSDuplicateManager.cs" />
+    <Compile Include="AI\TBETS\TBETSNode.cs" />
+    <Compile Include="AI\TBETS\TBETSNodeSelector.cs" />
+    <Compile Include="AI\TBETS\TBETSStateEvaluator.cs" />
+    <Compile Include="AI\TBETS\TBETSTreeManager.cs" />
     <Compile Include="VSServer.cs" />
     <Compile Include="Form\AutoBattleSettings.cs">
       <SubType>Form</SubType>
@@ -159,6 +168,27 @@
     <EmbeddedResource Include="Form\Option.resx">
       <DependentUpon>Option.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="bin\Debug\autobattle\map01.tbsmap" />
+    <None Include="bin\Debug\img\map\map01.tbsmap" />
+    <None Include="bin\Debug\img\map\map02.tbsmap" />
+    <None Include="bin\Debug\img\map\map03.tbsmap" />
+    <None Include="bin\Debug\img\map\map04.tbsmap" />
+    <None Include="bin\Debug\img\map\map05.tbsmap" />
+    <None Include="bin\Debug\img\map\testMurayama.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Fujiki.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Ishitobi.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Mizuno.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Muto.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Sato.tbsmap" />
+    <None Include="bin\Debug\map\map01.tbsmap" />
+    <None Include="bin\Debug\map\map02.tbsmap" />
+    <None Include="bin\Debug\map\map03.tbsmap" />
+    <None Include="bin\Debug\map\map04.tbsmap" />
+    <None Include="bin\Debug\map\map05.tbsmap" />
+    <None Include="bin\gameresults\2.csv" />
+    <None Include="bin\gameresults\Autobattle1.csv" />
+    <None Include="bin\gameresults\Autobattle20240401.csv" />
+    <None Include="bin\gameresults\Autobattle2025.csv" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -170,9 +200,53 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="bin\Debug\img\Blue_antiair.png" />
+    <Content Include="bin\Debug\img\Blue_attacker.png" />
+    <Content Include="bin\Debug\img\Blue_cannon.png" />
+    <Content Include="bin\Debug\img\Blue_fighter.png" />
+    <Content Include="bin\Debug\img\Blue_infantry.png" />
+    <Content Include="bin\Debug\img\Blue_panzer.png" />
+    <Content Include="bin\Debug\img\Char_A.png" />
+    <Content Include="bin\Debug\img\Char_F.png" />
+    <Content Include="bin\Debug\img\Char_I.png" />
+    <Content Include="bin\Debug\img\Char_P.png" />
+    <Content Include="bin\Debug\img\Char_R.png" />
+    <Content Include="bin\Debug\img\Char_U.png" />
+    <Content Include="bin\Debug\img\Field_fortress.png" />
+    <Content Include="bin\Debug\img\Field_mountain.png" />
+    <Content Include="bin\Debug\img\Field_noentry.png" />
+    <Content Include="bin\Debug\img\Field_plain.png" />
+    <Content Include="bin\Debug\img\Field_road.png" />
+    <Content Include="bin\Debug\img\Field_sea.png" />
+    <Content Include="bin\Debug\img\Field_wood.png" />
+    <Content Include="bin\Debug\img\Mark_blueselect.png" />
+    <Content Include="bin\Debug\img\Mark_end.png" />
+    <Content Include="bin\Debug\img\Mark_redselect.png" />
+    <Content Include="bin\Debug\img\Number_0.png" />
+    <Content Include="bin\Debug\img\Number_1.png" />
+    <Content Include="bin\Debug\img\Number_10.png" />
+    <Content Include="bin\Debug\img\Number_2.png" />
+    <Content Include="bin\Debug\img\Number_3.png" />
+    <Content Include="bin\Debug\img\Number_4.png" />
+    <Content Include="bin\Debug\img\Number_5.png" />
+    <Content Include="bin\Debug\img\Number_6.png" />
+    <Content Include="bin\Debug\img\Number_7.png" />
+    <Content Include="bin\Debug\img\Number_8.png" />
+    <Content Include="bin\Debug\img\Number_9.png" />
+    <Content Include="bin\Debug\img\Red_antiair.png" />
+    <Content Include="bin\Debug\img\Red_attacker.png" />
+    <Content Include="bin\Debug\img\Red_cannon.png" />
+    <Content Include="bin\Debug\img\Red_fighter.png" />
+    <Content Include="bin\Debug\img\Red_infantry.png" />
+    <Content Include="bin\Debug\img\Red_panzer.png" />
+    <Content Include="bin\Release\SimpleWars.exe" />
+    <Content Include="bin\Release\SimpleWars.pdb" />
     <Content Include="icon.ico" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="bin\Debug\savedata\" />
+    <Folder Include="bin\Release\AutoBattles\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
