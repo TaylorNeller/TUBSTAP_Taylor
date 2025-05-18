@@ -1,3 +1,4 @@
 bin/Release/
+bin/gameresults/
 .mono/
 .venv/
