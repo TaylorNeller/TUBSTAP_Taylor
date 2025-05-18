@@ -1,5 +1,6 @@
 AI/TBETS_copied/
 bin/Release/
+bin/Release/autobattle/
 bin/gameresults/
 .mono/
 .venv/
