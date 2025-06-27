@@ -201,7 +201,7 @@ namespace SimpleWars
                     Logger.addLogMessage("TBETS: Loaded root with no available nodes to exploit.\r\n", teamColor);
                 }
             }
-
+            string debug = "";
             // Main exploration loop
             for (int i = 0; i < N_ITERS; i++)
             {
@@ -209,7 +209,7 @@ namespace SimpleWars
                 if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
                 {
                     Logger.addLogMessage("TBETS: Time limit reached after " + i + " iters\r\n", teamColor);
-                    break;
+                    // throw new TimeoutException("TBETS: Time limit reached after " + i + " iters");
                 }
 
                 // SELECTION
@@ -217,18 +217,18 @@ namespace SimpleWars
 
                 // EXPANSION
                 if (selectedNode.IsLeaf) {
-                    // Console.WriteLine("TBETS: Selected node is leaf.");
+                    debug += "TBETS: Selected node is leaf.\n";
                     Logger.addLogMessage("TBETS: Selected node is leaf.\r\n", teamColor);
                     continue;
                 }
                 if (!selectedNode.Explored) {
                     // EXPLOIT
-                    // Console.WriteLine("TBETS: Selected node is EXPLOITABLE. depth=" + selectedNode.Depth);
+                    debug += "TBETS: Selected node is EXPLOITABLE. depth=" + selectedNode.Depth + "\n";
                     Exploit(selectedNode);
                 }
                 else {
                     // CROSSOVER/MUTATION
-                    // Console.WriteLine("TBETS: Selected node is beinge EXPLORED. depth=" + selectedNode.Depth);
+                    debug += "TBETS: Selected node is being EXPLORED. depth=" + selectedNode.Depth + "\n";
                     if (rnd.NextDouble() < MUTATION_RATE || selectedNode.Children.Count == 1)
                     {
                         // MUTATION: Pick 1 well performing node and mutate it
@@ -268,17 +268,18 @@ namespace SimpleWars
                     Console.WriteLine("TBETS: Root has only 1 child. (only 1 legal move?).");
                 }
                 else {  //something has gone wrong
-                    root.PrintChildren();
-                    root.PrintRecursive();
+                    // root.PrintChildren();
+                    // root.PrintRecursive();
                     foreach (TBETSNode node in root.Children) {
                         if (treeManager.CanBeExploited(node)) {
                             Console.WriteLine($"Node {node} can be exploited.");
                         }
                     }
                     Console.WriteLine("Original root:");
-                    Console.WriteLine(string_root);
-                    Console.WriteLine(root.State.toString());
-                    throw new ArgumentException("AI_TBETS: No explored nodes found in the list to select from.");
+                    // Console.WriteLine(string_root);
+                    // Console.WriteLine(root.State.toString());
+                    throw new ArgumentException("AI_TBETS: No explored nodes found in the list to select from.\n" +
+                        "["+debug+"]" + root.PrintChildren() + "\n" + root.StringRecursive() + "\n" + string_root + "\n" + root.State.toString());
                 }
             }
 

@@ -51,17 +51,22 @@ namespace SimpleWars
                 // if (rnd.NextDouble() < 0.5) {
                 //     break;
                 // }
-                // prev (best): .5 exploreProb - linear iteration annealing
-                // current: .4 exploreProb + linear children annealing - linear iter annealing
+                // prev (best): .5 exploreProb - linear iteration scaling
+                // current: .4 exploreProb + linear children annealing - linear iter scaling
                 double exploreProb = 0.5;
                 // exploreProb = exploreProb + exploreProb * (1.0/(double)Math.Pow(current.Children.Count,1)); // prioritizes nodes with less children
-                if (rnd.NextDouble() < exploreProb - exploreProb * (double)iter / (double)n_iters){ // annealing based on iteration
+                if (rnd.NextDouble() < exploreProb - exploreProb * (double)iter / (double)n_iters){ // scaling based on iteration
                     break;
                 }
                 // if (rnd.NextDouble() < exploreProb) {
                 //     break;
                 // }
 
+                // scaling based on number of children
+                // if (rnd.NextDouble() < exploreProb - exploreProb * Math.Min((double)current.Children.Count / 200, .8))
+                // {
+                //     break;
+                // }
 
                 // Select a child node
                 int childIndex = UCB_Explore(current);

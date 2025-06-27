@@ -17,7 +17,8 @@ namespace SimpleWars {
             new AI_Sample_MaxActEval(),
             new AI_RHEA(),
             new AI_RHCP(),
-            new AI_TBETS()
+            new AI_TBETS(),
+            new AI_EMCTS()
         };
 
         // デフォルトで対戦させたい 2プレイヤーのインデックスをここに登録する

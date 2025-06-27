@@ -572,9 +572,10 @@ namespace SimpleWars
             return $"Node[Color={Color}, Depth={Depth}, Actions={Actions.Count}, Fitness={Fitness:F3}, Children={Children.Count}, Duplicates={Duplicates.Count}, Explored={Explored}, Primary={IsPrimary}, Phantom={IsPhantom}, Leaf={IsLeaf}, Hash={StateHash} {(this.Deleted ? "DELETED" : "")}]";
         }
 
-        public void PrintRecursive() {
+        public void PrintRecursive()
+        {
             Console.WriteLine($"{new string(' ', Depth * 2)}{ToString()}");
-            
+
             foreach (TBETSNode child in this.Children)
             {
                 child.PrintRecursive();
@@ -606,21 +607,28 @@ namespace SimpleWars
                 Console.WriteLine($"{new string(' ', (this.Depth + 1) * 2)}Action: {action.ToString()}");
             }
         }
-        public void PrintChildren() {
+        public string PrintChildren()
+        {
+            // build a string
+            string result = "";
+
             foreach (TBETSNode child in this.Children)
             {
-                Console.WriteLine($"{new string(' ', this.Depth * 2)}{child.ToString()}");
-                Console.WriteLine($"{new string(' ', (this.Depth + 1) * 2)}Taken: ");
+                result += $"{new string(' ', this.Depth * 2)}{child.ToString()}\n";
+                result += $"{new string(' ', (this.Depth + 1) * 2)}Taken: \n";
                 foreach (Action action in child.TakenActions)
                 {
-                    Console.WriteLine($"{new string(' ', (this.Depth + 1) * 2)}Action: {action.ToString()}");
+                    result += $"{new string(' ', (this.Depth + 1) * 2)}Action: {action.ToString()}\n";
                 }
-                Console.WriteLine($"{new string(' ', (this.Depth + 1) * 2)}Actions: ");
+                result += $"{new string(' ', (this.Depth + 1) * 2)}Actions: \n";
+
                 foreach (Action action in child.Actions)
                 {
-                    Console.WriteLine($"{new string(' ', (this.Depth + 1) * 2)}Action: {action.ToString()}");
+                    result += $"{new string(' ', (this.Depth + 1) * 2)}Action: {action.ToString()}\n";
                 }
             }
+            Console.WriteLine(result);
+            return result;
         }
     }
 }
