@@ -1,0 +1,95 @@
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.582, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] -> 
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.692, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=2, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=3, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.588, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=3266982585082308554 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=4, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.650, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=1318307799254134778 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=5, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.558, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=4114189744152791079 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.704, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=3180491831699613420 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=5, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.704, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.704, Children=2, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.617, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4150597762381441382 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.704, Children=5, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=2, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=4, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.760, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=7876043040572876746 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=5, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.700, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2193300761073949186 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.647, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-1080285850099574250 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.692, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.587, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=1145562436942795571 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.692, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.587, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.587, Children=2, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.744, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-6764019969795590211 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.587, Children=3, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=1.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=5655010784062605479 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.587, Children=4, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]] -> 
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.859, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4663295208483100226 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.587, Children=5, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=482792818699672638 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.776, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4508256806312242030 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.653, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=7, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=3, Fitness=0.617, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=5801778408837325150 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=4, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=2, Fitness=0.617, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-8594740058040960075 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=2, Fitness=0.650, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-3857678086627052271 ]]
+Fitness Update [Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=7, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]] ->
+[Child: Node[Color=1, Depth=1, Actions=2, Fitness=0.582, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=4903343893518735268 ]]
+Fitness Update [Node[Color=0, Depth=2, Actions=3, Fitness=0.653, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]] ->
+[Child: Node[Color=1, Depth=3, Actions=2, Fitness=0.836, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4608359299296018319 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=1, Fitness=0.617, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.836, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]]
+Fitness Update [Node[Color=0, Depth=2, Actions=3, Fitness=0.836, Children=2, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]] ->
+[Child: Node[Color=1, Depth=3, Actions=2, Fitness=0.776, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-7949068891090757012 ]]
+Fitness Update [Node[Color=0, Depth=2, Actions=3, Fitness=0.836, Children=3, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]] ->
+[Child: Node[Color=1, Depth=3, Actions=2, Fitness=0.706, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4623962502392400285 ]]
+Fitness Update [Node[Color=0, Depth=2, Actions=3, Fitness=0.836, Children=4, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]] ->
+[Child: Node[Color=1, Depth=3, Actions=2, Fitness=0.644, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=8417744164738453117 ]]
+Fitness Update [Node[Color=0, Depth=2, Actions=3, Fitness=0.836, Children=5, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]] ->
+[Child: Node[Color=1, Depth=3, Actions=2, Fitness=0.842, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=3032134194011448221 ]]
+Fitness Update [Node[Color=1, Depth=1, Actions=1, Fitness=0.617, Children=6, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]] ->
+[Child: Node[Color=0, Depth=2, Actions=3, Fitness=0.842, Children=5, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]]
+Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=1, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ]
+  Node[Color=1, Depth=1, Actions=1, Fitness=0.617, Children=7, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=-3402038801273492246 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.704, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=3180491831699613420 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.617, Children=1, Duplicates=1, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4150597762381441382 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.617, Children=0, Duplicates=0, Explored=False, Primary=False, Phantom=False, Leaf=False, Hash=-4150597762381441382 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.760, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=7876043040572876746 ]
+      Node[Color=1, Depth=3, Actions=3, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.700, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=2193300761073949186 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.842, Children=5, Duplicates=1, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=2180041601634827797 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=0.836, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4608359299296018319 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+          Node[Color=1, Depth=5, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=0.776, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-7949068891090757012 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+          Node[Color=1, Depth=5, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=0.706, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=-4623962502392400285 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+          Node[Color=1, Depth=5, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=0.644, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=8417744164738453117 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+          Node[Color=1, Depth=5, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+      Node[Color=1, Depth=3, Actions=2, Fitness=0.842, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=False, Leaf=False, Hash=3032134194011448221 ]
+        Node[Color=0, Depth=4, Actions=2, Fitness=-2.000, Children=1, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+          Node[Color=1, Depth=5, Actions=2, Fitness=-2.000, Children=0, Duplicates=0, Explored=False, Primary=True, Phantom=True, Leaf=False, Hash=0 ]
+    Node[Color=0, Depth=2, Actions=3, Fitness=0.842, Children=0, Duplicates=0, Explored=False, Primary=False, Phantom=False, Leaf=False, Hash=2180041601634827797 ]
+
+Unhandled Exception: System.InvalidOperationException: Fitness integrity check failed at node: Node[Color=0, Depth=0, Actions=0, Fitness=0.650, Children=1, Duplicates=0, Explored=True, Primary=True, Phantom=False, Leaf=False, Hash=0 ].
+Expected fitness: 0.616666666666667, Actual fitness: 0.65. This may indicate an issue with the fitness propagation logic

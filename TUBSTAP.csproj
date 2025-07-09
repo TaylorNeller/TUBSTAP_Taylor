@@ -1,0 +1,260 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{50F13A2F-7311-49C8-84D3-478BDCCCF7E5}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SimpleWars</RootNamespace>
+    <AssemblyName>SimpleWars</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Action.cs" />
+    <Compile Include="ActionChecker.cs" />
+    <Compile Include="AI\AiTools.cs" />
+    <Compile Include="AI\EMCTS\AI_EMCTS.cs" />
+    <Compile Include="AI\EMCTS\AI_EMCTS_FH.cs" />
+    <Compile Include="AI\M3Lee\M3_Node.cs" />
+    <Compile Include="AI\M_UCT\AI_RHCP.cs" />
+    <Compile Include="AI\M_UCT\AI_RHEA.cs" />
+    <Compile Include="AI\M_UCT\M_Tools.cs" />
+    <Compile Include="AI\M3Lee\AI_M3Lee_hull.cs" />
+    <Compile Include="AI\AI_MSSystem.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT.cs" />
+    <Compile Include="AI\AI_Sample_MaxActEval.cs" />
+    <Compile Include="AI\AI_template.cs" />
+    <Compile Include="AI\M3Lee\AI_M3_UCT.cs" />
+    <Compile Include="AI\M_UCT\M_GameTree.cs" />
+    <Compile Include="AI\Sato\AI_SatAutoLose.cs" />
+    <Compile Include="AI\Sato\AI_SatD2.cs" />
+    <Compile Include="AI\Sato\AI_SatD2FULLORDER.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickAction.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickMap.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickMap_Aux.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickUnit.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickUnit_Aux_Acts.cs" />
+    <Compile Include="AI\Sato\SatQuickCompo\SatQuickUnit_Aux_Mv.cs" />
+    <Compile Include="AI\Sato\SAT_CNST.cs" />
+    <Compile Include="AI\Sato\SAT_FUNC.cs" />
+    <Compile Include="AI\Sato\SAT_FUNC2.cs" />
+    <Compile Include="AI\Sato\SAT_RangeController.cs" />
+    <Compile Include="AI\TBETS\AI_TBETS.cs" />
+    <Compile Include="AI\TBETS\TBETSActionGenerator.cs" />
+    <Compile Include="AI\TBETS\TBETSDuplicateManager.cs" />
+    <Compile Include="AI\TBETS\TBETSNode.cs" />
+    <Compile Include="AI\TBETS\TBETSNodeSelector.cs" />
+    <Compile Include="AI\TBETS\TBETSStateEvaluator.cs" />
+    <Compile Include="AI\TBETS\TBETSTreeManager.cs" />
+    <Compile Include="VSServer.cs" />
+    <Compile Include="Form\AutoBattleSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\AutoBattleSettings.Designer.cs">
+      <DependentUpon>AutoBattleSettings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Consts.cs" />
+    <Compile Include="DamageCalculator.cs" />
+    <Compile Include="DrawManager.cs" />
+    <Compile Include="Form\BattleCheat.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\BattleCheat.Designer.cs">
+      <DependentUpon>BattleCheat.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GameManager.cs" />
+    <Compile Include="HumanPlayer.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Map.cs" />
+    <Compile Include="NetworkPlayer.cs" />
+    <Compile Include="Player.cs" />
+    <Compile Include="PlayerList.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RangeController.cs" />
+    <Compile Include="Form\Settings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\Settings.Designer.cs">
+      <DependentUpon>Settings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SGFManager.cs" />
+    <Compile Include="Spec.cs" />
+    <Compile Include="Unit.cs" />
+    <Compile Include="Form\BattleResult.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\BattleResult.Designer.cs">
+      <DependentUpon>BattleResult.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\Option.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\Option.Designer.cs">
+      <DependentUpon>Option.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Form\AutoBattleSettings.resx">
+      <DependentUpon>AutoBattleSettings.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\BattleCheat.resx">
+      <DependentUpon>BattleCheat.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\Settings.resx">
+      <DependentUpon>Settings.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Form\BattleResult.resx">
+      <DependentUpon>BattleResult.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\Option.resx">
+      <DependentUpon>Option.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="bin\Debug\autobattle\map01.tbsmap" />
+    <None Include="bin\Debug\img\map\map01.tbsmap" />
+    <None Include="bin\Debug\img\map\map02.tbsmap" />
+    <None Include="bin\Debug\img\map\map03.tbsmap" />
+    <None Include="bin\Debug\img\map\map04.tbsmap" />
+    <None Include="bin\Debug\img\map\map05.tbsmap" />
+    <None Include="bin\Debug\img\map\testMurayama.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Fujiki.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Ishitobi.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Mizuno.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Muto.tbsmap" />
+    <None Include="bin\Debug\map\GPW_Sato.tbsmap" />
+    <None Include="bin\Debug\map\map01.tbsmap" />
+    <None Include="bin\Debug\map\map02.tbsmap" />
+    <None Include="bin\Debug\map\map03.tbsmap" />
+    <None Include="bin\Debug\map\map04.tbsmap" />
+    <None Include="bin\Debug\map\map05.tbsmap" />
+    <None Include="bin\gameresults\2.csv" />
+    <None Include="bin\gameresults\Autobattle1.csv" />
+    <None Include="bin\gameresults\Autobattle20240401.csv" />
+    <None Include="bin\gameresults\Autobattle2025.csv" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\img\Blue_antiair.png" />
+    <Content Include="bin\Debug\img\Blue_attacker.png" />
+    <Content Include="bin\Debug\img\Blue_cannon.png" />
+    <Content Include="bin\Debug\img\Blue_fighter.png" />
+    <Content Include="bin\Debug\img\Blue_infantry.png" />
+    <Content Include="bin\Debug\img\Blue_panzer.png" />
+    <Content Include="bin\Debug\img\Char_A.png" />
+    <Content Include="bin\Debug\img\Char_F.png" />
+    <Content Include="bin\Debug\img\Char_I.png" />
+    <Content Include="bin\Debug\img\Char_P.png" />
+    <Content Include="bin\Debug\img\Char_R.png" />
+    <Content Include="bin\Debug\img\Char_U.png" />
+    <Content Include="bin\Debug\img\Field_fortress.png" />
+    <Content Include="bin\Debug\img\Field_mountain.png" />
+    <Content Include="bin\Debug\img\Field_noentry.png" />
+    <Content Include="bin\Debug\img\Field_plain.png" />
+    <Content Include="bin\Debug\img\Field_road.png" />
+    <Content Include="bin\Debug\img\Field_sea.png" />
+    <Content Include="bin\Debug\img\Field_wood.png" />
+    <Content Include="bin\Debug\img\Mark_blueselect.png" />
+    <Content Include="bin\Debug\img\Mark_end.png" />
+    <Content Include="bin\Debug\img\Mark_redselect.png" />
+    <Content Include="bin\Debug\img\Number_0.png" />
+    <Content Include="bin\Debug\img\Number_1.png" />
+    <Content Include="bin\Debug\img\Number_10.png" />
+    <Content Include="bin\Debug\img\Number_2.png" />
+    <Content Include="bin\Debug\img\Number_3.png" />
+    <Content Include="bin\Debug\img\Number_4.png" />
+    <Content Include="bin\Debug\img\Number_5.png" />
+    <Content Include="bin\Debug\img\Number_6.png" />
+    <Content Include="bin\Debug\img\Number_7.png" />
+    <Content Include="bin\Debug\img\Number_8.png" />
+    <Content Include="bin\Debug\img\Number_9.png" />
+    <Content Include="bin\Debug\img\Red_antiair.png" />
+    <Content Include="bin\Debug\img\Red_attacker.png" />
+    <Content Include="bin\Debug\img\Red_cannon.png" />
+    <Content Include="bin\Debug\img\Red_fighter.png" />
+    <Content Include="bin\Debug\img\Red_infantry.png" />
+    <Content Include="bin\Debug\img\Red_panzer.png" />
+    <Content Include="bin\Release\SimpleWars.exe" />
+    <Content Include="bin\Release\SimpleWars.pdb" />
+    <Content Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bin\Debug\savedata\" />
+    <Folder Include="bin\Release\AutoBattles\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

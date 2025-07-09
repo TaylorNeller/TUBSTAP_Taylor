@@ -1,0 +1,1196 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+
+namespace SimpleWars
+{
+    /// <summary>
+    /// Turn Based Evolutionary Tree-Search (TBETS) Agent
+    /// This algorithm progressively generates a game tree of nodes
+    /// Each node holds the actions for a full turn. There are current player and enemy nodes
+    /// </summary>
+    class AI_TBETS : Player
+    {
+        // Algorithm parameters
+        private const int NUM_INIT = 10;              // Number of initial randomized player nodes
+        private const int N_ITERS = 200;        // Number of exploration iterations
+        private const double PERCENT_EXPLORE = 0.9;   // Chance to explore existing nodes
+        private const double PERCENT_EXPLOIT = 0.1;   // Chance to exploit unexplored nodes
+        private const double MUTATION_RATE = 0.3;     // Chance to mutate instead of crossover
+        private const int STARTING_POP = 5;           // Number of children for unexplored nodes
+        private const double ATK_BIAS = 0.8;          // Bias towards attack actions in random generation
+        private const long LIMIT_TIME = 9700;         // Time limit for decision making in milliseconds
+
+        // Stopwatch for time management
+        private Stopwatch stopwatch = new Stopwatch();
+        private static long timeLeft;
+        
+        // Random number generator
+        private Random rnd = new Random();
+
+        // Class to represent a node in the game tree
+        private class TBETSNode
+        {
+            public List<Action> actions;           // Actions for this turn
+            public Map state;                      // Game state at this node
+            public double fitness;                 // Node fitness/evaluation
+            public bool isPlayerNode;              // Whether this is a player node (vs enemy node)
+            public List<TBETSNode> children;       // Child nodes
+            public bool explored;                  // Whether this node has been explored
+            public int depth;                      // Depth in the tree
+            
+            public TBETSNode(bool isPlayer, int depth)
+            {
+                this.actions = new List<Action>();
+                this.fitness = 0.0;
+                this.isPlayerNode = isPlayer;
+                this.children = new List<TBETSNode>();
+                this.explored = false;
+                this.depth = depth;
+            }
+            
+            public TBETSNode Clone()
+            {
+                TBETSNode clone = new TBETSNode(this.isPlayerNode, this.depth);
+                clone.fitness = this.fitness;
+                clone.explored = this.explored;
+                
+                if (this.state != null)
+                {
+                    clone.state = this.state.createDeepClone();
+                }
+                
+                foreach (Action action in this.actions)
+                {
+                    clone.actions.Add(action.createDeepClone());
+                }
+                
+                return clone;
+            }
+        }
+
+        public string getName()
+        {
+            return "TBETS";
+        }
+
+        public string showParameters()
+        {
+            return "NUM_INIT = " + NUM_INIT + 
+                   ", N_ITERS = " + N_ITERS + 
+                   ", PERCENT_EXPLORE = " + PERCENT_EXPLORE + 
+                   ", PERCENT_EXPLOIT = " + PERCENT_EXPLOIT +
+                   ", MUTATION_RATE = " + MUTATION_RATE +
+                   ", STARTING_POP = " + STARTING_POP +
+                   ", ATK_BIAS = " + ATK_BIAS;
+        }
+
+        public Action makeAction(Map map, int teamColor, bool turnStart, bool gameStart)
+        {
+            stopwatch.Start();
+            
+            if (turnStart)
+            {
+                timeLeft = LIMIT_TIME;
+            }
+            
+            int movableUnitsCount = map.getUnitsList(teamColor, false, true, false).Count;
+            
+            // Begin with an empty root enemy node
+            TBETSNode root = new TBETSNode(false, 0);
+            root.state = map.createDeepClone();
+            
+            // Generate NUM_INIT randomized initial player nodes from the root
+            for (int i = 0; i < NUM_INIT; i++)
+            {
+                TBETSNode playerNode = new TBETSNode(true, 1);
+                playerNode.state = root.state.createDeepClone();
+                
+                // Generate random actions for this player node
+                playerNode.actions = GenerateRandomActions(playerNode.state, teamColor, ATK_BIAS);
+                
+                // Apply actions to the state
+                ApplyActionsToState(playerNode.actions, playerNode.state);
+                
+                // Calculate fitness
+                playerNode.fitness = EvaluateNodeFitness(playerNode, teamColor);
+                
+                // Add to root's children
+                root.children.Add(playerNode);
+            }
+            
+            root.explored = true;
+            
+            // Main exploration loop
+            for (int i = 0; i < N_ITERS; i++)
+            {
+                if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
+                {
+                    Logger.addLogMessage("TBETS: Time limit reached after " + i + " explorations\r\n", teamColor);
+                    break;
+                }
+                
+                // Decide whether to explore or exploit
+                if (rnd.NextDouble() < PERCENT_EXPLORE && HasExploredNodes(root))
+                {
+                    // Explore: Pick any explored node
+                    TBETSNode selectedNode = SelectExploredNode(root, teamColor);
+                    
+                    // Create a new node with genetic operations
+                    if (rnd.NextDouble() < MUTATION_RATE)
+                    {
+                        // Mutation
+                        TBETSNode highFitnessNode = SelectHighFitnessNode(selectedNode.children, selectedNode.isPlayerNode);
+                        TBETSNode mutatedNode = MutateNode(highFitnessNode, teamColor);
+                        
+                        // Calculate fitness for the new node
+                        mutatedNode.fitness = EvaluateNodeFitness(mutatedNode, teamColor);
+                        
+                        // Add to children
+                        selectedNode.children.Add(mutatedNode);
+                    }
+                    else
+                    {
+                        // Crossover
+                        TBETSNode parent1 = SelectHighFitnessNode(selectedNode.children, selectedNode.isPlayerNode);
+                        TBETSNode parent2 = SelectHighFitnessNode(selectedNode.children, selectedNode.isPlayerNode, parent1);
+                        TBETSNode offspring = CrossoverNodes(parent1, parent2, teamColor);
+                        
+                        // Calculate fitness for the new node
+                        offspring.fitness = EvaluateNodeFitness(offspring, teamColor);
+                        
+                        // Add to children
+                        selectedNode.children.Add(offspring);
+                    }
+                }
+                else if (HasUnexploredNodes(root))
+                {
+                    // Exploit: Pick any unexplored node
+                    TBETSNode selectedNode = SelectUnexploredNode(root, teamColor);
+                    
+                    // Generate STARTING_POP randomly initialized children
+                    for (int j = 0; j < STARTING_POP; j++)
+                    {
+                        TBETSNode childNode = new TBETSNode(!selectedNode.isPlayerNode, selectedNode.depth + 1);
+                        childNode.state = selectedNode.state.createDeepClone();
+                        
+                        // Generate random actions
+                        int nodeTeamColor = selectedNode.isPlayerNode ? teamColor : (teamColor == 0 ? 1 : 0);
+                        childNode.actions = GenerateRandomActions(childNode.state, nodeTeamColor, ATK_BIAS);
+                        
+                        // Apply actions to the state
+                        ApplyActionsToState(childNode.actions, childNode.state);
+                        
+                        // Calculate fitness
+                        childNode.fitness = EvaluateNodeFitness(childNode, teamColor);
+                        
+                        // Add to children
+                        selectedNode.children.Add(childNode);
+                    }
+                    
+                    // Update the node's fitness to be the lowest fitness among the children
+                    selectedNode.fitness = GetLowestFitness(selectedNode.children);
+                    
+                    // Mark as explored
+                    selectedNode.explored = true;
+                }
+            }
+            
+            // Find the best action sequence from the root's children
+            TBETSNode bestNode = GetBestPlayerNode(root.children);
+            
+            // Extract the best action to return
+            Action bestAction = GetBestAction(bestNode, map, teamColor);
+            
+            stopwatch.Stop();
+            Logger.addLogMessage("TBETS: Time used: " + stopwatch.ElapsedMilliseconds + "ms\r\n", teamColor);
+            timeLeft -= stopwatch.ElapsedMilliseconds;
+            stopwatch.Reset();
+            
+            return bestAction;
+        }
+        
+        // Generate random actions for one turn
+        private List<Action> GenerateRandomActions(Map map, int teamColor, double attackBias)
+        {
+            List<Action> actions = new List<Action>();
+            Map simMap = map.createDeepClone();
+            
+            // Get all movable units
+            List<Unit> movableUnits = new List<Unit>(simMap.getUnitsList(teamColor, false, true, false));
+            
+            // For each movable unit, generate a random action
+            foreach (Unit unit in movableUnits)
+            {
+                // Skip if the unit no longer exists or has already acted
+                if (unit == null || unit.isActionFinished())
+                {
+                    continue;
+                }
+                
+                // Decide whether to prioritize attack or movement
+                bool prioritizeAttack = rnd.NextDouble() < attackBias;
+                
+                if (prioritizeAttack)
+                {
+                    // Try to get attack actions first
+                    List<Action> attackActions = RangeController.getAttackActionList(unit, simMap);
+                    List<Action> validAttackActions = new List<Action>();
+                    
+                    foreach (Action attack in attackActions)
+                    {
+                        // Verify the target unit still exists
+                        Unit targetUnit = simMap.getUnit(attack.targetUnitId);
+                        if (targetUnit == null)
+                        {
+                            continue;
+                        }
+                        
+                        // For attack actions that involve movement, verify the destination is not occupied
+                        if (attack.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
+                        {
+                            Unit existingUnit = simMap.getUnit(attack.destinationXpos, attack.destinationYpos);
+                            if (existingUnit != null && existingUnit.getID() != attack.operationUnitId)
+                            {
+                                continue;
+                            }
+                            
+                            // Double-check attack range after movement
+                            bool[,] attackable = RangeController.getAttackableCellsMatrix(unit, simMap);
+                            if (!attackable[targetUnit.getXpos(), targetUnit.getYpos()])
+                            {
+                                continue;
+                            }
+                        }
+                        
+                        validAttackActions.Add(attack);
+                    }
+                    
+                    if (validAttackActions.Count > 0)
+                    {
+                        // Choose a random attack action
+                        Action action = validAttackActions[rnd.Next(validAttackActions.Count)];
+                        Action actionClone = action.createDeepClone();
+                        actions.Add(actionClone);
+                        simMap.executeAction(action);
+                        continue;
+                    }
+                }
+                
+                // If no attack action or not prioritizing attack, try movement
+                List<Action> moveActions = new List<Action>();
+                bool[,] reachable = RangeController.getReachableCellsMatrix(unit, simMap);
+                
+                for (int x = 1; x < simMap.getXsize() - 1; x++)
+                {
+                    for (int y = 1; y < simMap.getYsize() - 1; y++)
+                    {
+                        // Make sure the position is reachable and not occupied by another unit
+                        Unit existingUnit = simMap.getUnit(x, y);
+                        if (reachable[x, y] && (existingUnit == null || existingUnit.getID() == unit.getID()))
+                        {
+                            moveActions.Add(Action.createMoveOnlyAction(unit, x, y));
+                        }
+                    }
+                }
+                
+                if (moveActions.Count > 0)
+                {
+                    // Choose a random move action
+                    Action action = moveActions[rnd.Next(moveActions.Count)];
+                    
+                    // Double-check that the destination is still not occupied
+                    Unit existingUnit = simMap.getUnit(action.destinationXpos, action.destinationYpos);
+                    if (existingUnit == null || existingUnit.getID() == action.operationUnitId)
+                    {
+                        Action actionClone = action.createDeepClone();
+                        actions.Add(actionClone);
+                        simMap.executeAction(action);
+                    }
+                }
+            }
+            
+            return actions;
+        }
+        
+        // Apply a list of actions to a state
+        private void ApplyActionsToState(List<Action> actions, Map state)
+        {
+            // Skip if the actions list is empty
+            if (actions == null || actions.Count == 0)
+            {
+                return;
+            }
+            
+            // Remember teamColor from the first valid action
+            int teamColor = -1;
+            
+            // Create a simMap for iterative action execution
+            Map simMap = state.createDeepClone();
+            
+            foreach (Action action in actions)
+            {
+                // Make a deep clone to avoid modifying the original
+                Action actionClone = action.createDeepClone();
+                
+                // Make sure the unit exists and hasn't acted
+                Unit unit = simMap.getUnit(actionClone.operationUnitId);
+                if (unit == null || unit.isActionFinished())
+                {
+                    continue;
+                }
+                
+                // Capture team color if we haven't yet
+                if (teamColor == -1)
+                {
+                    teamColor = unit.getTeamColor();
+                }
+                
+                // Verify the action is valid
+                if (actionClone.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
+                {
+                    // For attack actions, verify the target unit still exists
+                    Unit targetUnit = simMap.getUnit(actionClone.targetUnitId);
+                    if (targetUnit == null)
+                    {
+                        continue;
+                    }
+                    
+                    // Also verify the destination is not occupied by another unit
+                    Unit existingUnit = simMap.getUnit(actionClone.destinationXpos, actionClone.destinationYpos);
+                    if (existingUnit != null && existingUnit.getID() != actionClone.operationUnitId)
+                    {
+                        continue;
+                    }
+                    
+                    // Verify attack range - first move the unit to the destination
+                    int originalX = unit.getXpos();
+                    int originalY = unit.getYpos();
+                    unit.setPos(actionClone.destinationXpos, actionClone.destinationYpos);
+                    
+                    // Check if the target is within attack range from the new position
+                    bool[,] attackable = RangeController.getAttackableCellsMatrix(unit, simMap);
+                    
+                    // Reset the unit position
+                    unit.setPos(originalX, originalY);
+                    
+                    if (!attackable[targetUnit.getXpos(), targetUnit.getYpos()])
+                    {
+                        continue; // Skip this action if target not in range
+                    }
+                }
+                else if (actionClone.actionType == Action.ACTIONTYPE_MOVEONLY)
+                {
+                    // For move actions, verify the destination is not occupied by another unit
+                    Unit existingUnit = simMap.getUnit(actionClone.destinationXpos, actionClone.destinationYpos);
+                    if (existingUnit != null && existingUnit.getID() != actionClone.operationUnitId)
+                    {
+                        continue;
+                    }
+                    
+                    // Verify the destination is reachable
+                    bool[,] reachable = RangeController.getReachableCellsMatrix(unit, simMap);
+                    if (!reachable[actionClone.destinationXpos, actionClone.destinationYpos])
+                    {
+                        continue;
+                    }
+                }
+                
+                // Execute the action
+                simMap.executeAction(actionClone);
+            }
+            
+            // Only proceed if we've identified a valid team color
+            if (teamColor != -1)
+            {
+                // Enable units for the next turn
+                simMap.enableUnitsAction(teamColor);
+                
+                // Increment turn count
+                simMap.incTurnCount();
+            }
+            
+            // Update the original state with the final state after all actions
+            state = simMap;
+        }
+        
+        // Evaluate the fitness of a node
+        private double EvaluateNodeFitness(TBETSNode node, int teamColor)
+        {
+            if (node.state == null)
+            {
+                return 0.0;
+            }
+            
+            int enemyColor = (teamColor == 0) ? 1 : 0;
+            
+            // For player nodes, we need to simulate an enemy turn
+            if (node.isPlayerNode)
+            {
+                // Create a deep clone for simulation
+                Map simState = node.state.createDeepClone();
+                
+                // Simulate enemy turn using AI_Sample_MaxActEval logic
+                SimulateEnemyTurn(simState, enemyColor);
+                
+                // Enable units for the next turn
+                simState.enableUnitsAction(enemyColor);
+                
+                // Increment turn count
+                simState.incTurnCount();
+                
+                // Evaluate the state after enemy's turn
+                return EvaluateState(simState, teamColor);
+            }
+            else
+            {
+                // For enemy nodes, just evaluate the current state
+                return EvaluateState(node.state, teamColor);
+            }
+        }
+        
+        // Simulate the enemy's turn using logic similar to AI_Sample_MaxActEval
+        private void SimulateEnemyTurn(Map simMap, int enemyColor)
+        {
+            int myColor = (enemyColor == 0) ? 1 : 0;
+            
+            // Get a copy of the enemy units list to avoid modification during iteration
+            List<Unit> enemyUnits = new List<Unit>(simMap.getUnitsList(enemyColor, false, true, false));
+            
+            while (enemyUnits.Count > 0)
+            {
+                int randomIndex = rnd.Next(enemyUnits.Count);
+                Unit enemyUnit = enemyUnits[randomIndex];
+                enemyUnits.RemoveAt(randomIndex);
+                
+                // Skip if the unit no longer exists or has already acted
+                if (enemyUnit == null || enemyUnit.isActionFinished())
+                {
+                    continue;
+                }
+                
+                // Try to attack first
+                List<Action> attackActions = RangeController.getAttackActionList(enemyUnit, simMap);
+                List<Action> validAttackActions = new List<Action>();
+                
+                foreach (Action attack in attackActions)
+                {
+                    // Skip if it's not an attack action
+                    if (attack.actionType != Action.ACTIONTYPE_MOVEANDATTACK)
+                    {
+                        continue;
+                    }
+                    
+                    // Verify the target unit still exists
+                    Unit targetUnit = simMap.getUnit(attack.targetUnitId);
+                    if (targetUnit == null)
+                    {
+                        continue;
+                    }
+                    
+                    // For attack actions that involve movement, verify the destination is not occupied
+                    Unit existingUnit = simMap.getUnit(attack.destinationXpos, attack.destinationYpos);
+                    if (existingUnit != null && existingUnit.getID() != attack.operationUnitId)
+                    {
+                        continue;
+                    }
+                    
+                    // Verify the attack range
+                    int originalX = enemyUnit.getXpos();
+                    int originalY = enemyUnit.getYpos();
+                    
+                    // Temporarily move the unit to check attack range
+                    enemyUnit.setPos(attack.destinationXpos, attack.destinationYpos);
+                    bool[,] attackable = RangeController.getAttackableCellsMatrix(enemyUnit, simMap);
+                    
+                    // Reset position
+                    enemyUnit.setPos(originalX, originalY);
+                    
+                    if (!attackable[targetUnit.getXpos(), targetUnit.getYpos()])
+                    {
+                        continue;
+                    }
+                    
+                    validAttackActions.Add(attack);
+                }
+                
+                if (validAttackActions.Count > 0)
+                {
+                    // Find the attack action that deals the most damage
+                    Action bestAttack = null;
+                    int maxDamage = -1;
+                    
+                    foreach (Action attack in validAttackActions)
+                    {
+                        int[] damages = DamageCalculator.calculateDamages(simMap, attack);
+                        if (damages[0] > maxDamage)
+                        {
+                            maxDamage = damages[0];
+                            bestAttack = attack;
+                        }
+                    }
+                    
+                    if (bestAttack != null)
+                    {
+                        // Create a deep clone before execution
+                        Action bestAttackClone = bestAttack.createDeepClone();
+                        simMap.executeAction(bestAttackClone);
+                        continue;
+                    }
+                }
+                
+                // If no attack is possible, move towards the nearest enemy
+                List<Unit> myUnits = simMap.getUnitsList(myColor, true, true, false);
+                
+                if (myUnits.Count > 0)
+                {
+                    // Find the nearest enemy unit
+                    Unit nearestEnemy = null;
+                    int minDistance = int.MaxValue;
+                    
+                    foreach (Unit myUnit in myUnits)
+                    {
+                        int distance = Math.Abs(myUnit.getXpos() - enemyUnit.getXpos()) + 
+                                      Math.Abs(myUnit.getYpos() - enemyUnit.getYpos());
+                        
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            nearestEnemy = myUnit;
+                        }
+                    }
+                    
+                    if (nearestEnemy != null)
+                    {
+                        // Move towards the nearest enemy
+                        bool[,] reachable = RangeController.getReachableCellsMatrix(enemyUnit, simMap);
+                        int bestX = enemyUnit.getXpos();
+                        int bestY = enemyUnit.getYpos();
+                        int bestDistance = minDistance;
+                        
+                        for (int x = 1; x < simMap.getXsize() - 1; x++)
+                        {
+                            for (int y = 1; y < simMap.getYsize() - 1; y++)
+                            {
+                                // Make sure the position is reachable and not occupied by another unit
+                                Unit existingUnit = simMap.getUnit(x, y);
+                                if (reachable[x, y] && (existingUnit == null || existingUnit.getID() == enemyUnit.getID()))
+                                {
+                                    int distance = Math.Abs(nearestEnemy.getXpos() - x) + 
+                                                  Math.Abs(nearestEnemy.getYpos() - y);
+                                    
+                                    if (distance < bestDistance)
+                                    {
+                                        bestDistance = distance;
+                                        bestX = x;
+                                        bestY = y;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (bestX != enemyUnit.getXpos() || bestY != enemyUnit.getYpos())
+                        {
+                            // Double-check that the destination is still not occupied
+                            Unit existingUnit = simMap.getUnit(bestX, bestY);
+                            if (existingUnit == null || existingUnit.getID() == enemyUnit.getID())
+                            {
+                                Action moveAction = Action.createMoveOnlyAction(enemyUnit, bestX, bestY);
+                                Action moveActionClone = moveAction.createDeepClone();
+                                simMap.executeAction(moveActionClone);
+                            }
+                            else
+                            {
+                                // If the destination is now occupied, just mark the unit as finished
+                                enemyUnit.setActionFinished(true);
+                            }
+                        }
+                        else
+                        {
+                            // If no better position is found, just mark the unit as finished
+                            enemyUnit.setActionFinished(true);
+                        }
+                    }
+                    else
+                    {
+                        // If no enemy units are found, just mark the unit as finished
+                        enemyUnit.setActionFinished(true);
+                    }
+                }
+                else
+                {
+                    // If no enemy units are found, just mark the unit as finished
+                    enemyUnit.setActionFinished(true);
+                }
+            }
+        }
+        
+        // Evaluate the state of the game
+        private double EvaluateState(Map simMap, int teamColor)
+        {
+            int enemyColor = (teamColor == 0) ? 1 : 0;
+            
+            List<Unit> myUnits = simMap.getUnitsList(teamColor, true, true, false);
+            List<Unit> enemyUnits = simMap.getUnitsList(enemyColor, true, true, false);
+            
+            // If we have no units left, return the worst possible score
+            if (myUnits.Count == 0)
+            {
+                return 0.0;
+            }
+            
+            // If the enemy has no units left, return the best possible score
+            if (enemyUnits.Count == 0)
+            {
+                return 1.0;
+            }
+            
+            // Calculate total value for both sides
+            double myValue = 0.0;
+            double enemyValue = 0.0;
+            
+            // Unit value dictionary
+            Dictionary<string, double> unitValues = new Dictionary<string, double>();
+            unitValues.Add("infantry", 1.0);
+            unitValues.Add("panzer", 4.0);
+            unitValues.Add("cannon", 4.0);
+            unitValues.Add("antiair", 2.5);
+            unitValues.Add("fighter", 4.0);
+            unitValues.Add("attacker", 6.0);
+            
+            foreach (Unit unit in myUnits)
+            {
+                string unitName = unit.getName().ToLower();
+                if (unitValues.ContainsKey(unitName))
+                {
+                    myValue += unitValues[unitName] * unit.getHP();
+                }
+                else
+                {
+                    myValue += unit.getHP();
+                }
+            }
+            
+            foreach (Unit unit in enemyUnits)
+            {
+                string unitName = unit.getName().ToLower();
+                if (unitValues.ContainsKey(unitName))
+                {
+                    enemyValue += unitValues[unitName] * unit.getHP();
+                }
+                else
+                {
+                    enemyValue += unit.getHP();
+                }
+            }
+            
+            // Calculate value ratio
+            double valueRatio = myValue / (myValue + enemyValue);
+            
+            // Add a small bonus for having more units
+            double unitRatio = (double)myUnits.Count / (myUnits.Count + enemyUnits.Count);
+            
+            // Combine the two ratios with a weight
+            return 0.7 * valueRatio + 0.3 * unitRatio;
+        }
+        
+        // Check if there are any explored nodes in the tree
+        private bool HasExploredNodes(TBETSNode root)
+        {
+            if (root.explored && root.children.Count > 0)
+            {
+                return true;
+            }
+            
+            foreach (TBETSNode child in root.children)
+            {
+                if (HasExploredNodes(child))
+                {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Check if there are any unexplored nodes in the tree
+        private bool HasUnexploredNodes(TBETSNode root)
+        {
+            if (!root.explored)
+            {
+                return true;
+            }
+            
+            foreach (TBETSNode child in root.children)
+            {
+                if (HasUnexploredNodes(child))
+                {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Select an explored node, biasing towards nodes closer to the root and nodes with higher fitness
+        private TBETSNode SelectExploredNode(TBETSNode root, int teamColor)
+        {
+            List<TBETSNode> candidates = new List<TBETSNode>();
+            GetExploredNodes(root, candidates);
+            
+            if (candidates.Count == 0)
+            {
+                return root;
+            }
+            
+            // Sort by depth (ascending) and fitness (descending)
+            candidates.Sort((a, b) => {
+                int depthComparison = a.depth.CompareTo(b.depth);
+                if (depthComparison != 0)
+                {
+                    return depthComparison;
+                }
+                return b.fitness.CompareTo(a.fitness);
+            });
+            
+            // Select one of the top nodes with some randomness
+            int index = (int)(rnd.NextDouble() * rnd.NextDouble() * candidates.Count);
+            return candidates[index];
+        }
+        
+        // Helper to get all explored nodes
+        private void GetExploredNodes(TBETSNode node, List<TBETSNode> exploredNodes)
+        {
+            if (node.explored && node.children.Count > 0)
+            {
+                exploredNodes.Add(node);
+            }
+            
+            foreach (TBETSNode child in node.children)
+            {
+                GetExploredNodes(child, exploredNodes);
+            }
+        }
+        
+        // Select an unexplored node, biasing towards high fitness nodes
+        private TBETSNode SelectUnexploredNode(TBETSNode root, int teamColor)
+        {
+            List<TBETSNode> candidates = new List<TBETSNode>();
+            GetUnexploredNodes(root, candidates);
+            
+            if (candidates.Count == 0)
+            {
+                return root;
+            }
+            
+            // Sort by fitness (descending)
+            candidates.Sort((a, b) => b.fitness.CompareTo(a.fitness));
+            
+            // Select one of the top nodes with some randomness
+            int index = (int)(rnd.NextDouble() * rnd.NextDouble() * candidates.Count);
+            return candidates[index];
+        }
+        
+        // Helper to get all unexplored nodes
+        private void GetUnexploredNodes(TBETSNode node, List<TBETSNode> unexploredNodes)
+        {
+            if (!node.explored)
+            {
+                unexploredNodes.Add(node);
+            }
+            
+            foreach (TBETSNode child in node.children)
+            {
+                GetUnexploredNodes(child, unexploredNodes);
+            }
+        }
+        
+        // Select a high fitness node from a list
+        private TBETSNode SelectHighFitnessNode(List<TBETSNode> nodes, bool isPlayerNode, TBETSNode exclude = null)
+        {
+            if (nodes.Count == 0)
+            {
+                return null;
+            }
+            
+            // Create a copy of the list excluding the node to exclude
+            List<TBETSNode> candidates = new List<TBETSNode>();
+            foreach (TBETSNode node in nodes)
+            {
+                if (exclude == null || node != exclude)
+                {
+                    candidates.Add(node);
+                }
+            }
+            
+            if (candidates.Count == 0)
+            {
+                return nodes[0];
+            }
+            
+            // Sort by fitness
+            if (isPlayerNode)
+            {
+                // For player nodes, high fitness is good
+                candidates.Sort((a, b) => b.fitness.CompareTo(a.fitness));
+            }
+            else
+            {
+                // For enemy nodes, low fitness is good (from player's perspective)
+                candidates.Sort((a, b) => a.fitness.CompareTo(b.fitness));
+            }
+            
+            // Tournament selection
+            int tournamentSize = Math.Min(3, candidates.Count);
+            TBETSNode best = null;
+            
+            for (int i = 0; i < tournamentSize; i++)
+            {
+                int randomIndex = rnd.Next(candidates.Count);
+                TBETSNode candidate = candidates[randomIndex];
+                
+                if (best == null || (isPlayerNode ? candidate.fitness > best.fitness : candidate.fitness < best.fitness))
+                {
+                    best = candidate;
+                }
+            }
+            
+            return best;
+        }
+        
+        // Create a new node by mutating an existing one
+        private TBETSNode MutateNode(TBETSNode node, int teamColor)
+        {
+            TBETSNode mutated = node.Clone();
+            
+            // Reset actions and re-generate
+            mutated.actions.Clear();
+            int nodeTeamColor = node.isPlayerNode ? teamColor : (teamColor == 0 ? 1 : 0);
+            
+            // Create a fresh state from the parent node
+            if (node.state != null)
+            {
+                mutated.state = node.state.createDeepClone();
+                
+                // Generate random actions with a high attack bias
+                mutated.actions = GenerateRandomActions(mutated.state, nodeTeamColor, ATK_BIAS);
+                
+                // Apply actions to the state
+                ApplyActionsToState(mutated.actions, mutated.state);
+            }
+            
+            return mutated;
+        }
+        
+        // Create a new node by crossing over two parent nodes
+        private TBETSNode CrossoverNodes(TBETSNode parent1, TBETSNode parent2, int teamColor)
+        {
+            TBETSNode offspring = new TBETSNode(parent1.isPlayerNode, parent1.depth);
+            
+            // Create a fresh state from the first parent
+            if (parent1.state != null)
+            {
+                offspring.state = parent1.state.createDeepClone();
+                
+                // Set team color based on node type
+                int nodeTeamColor = parent1.isPlayerNode ? teamColor : (teamColor == 0 ? 1 : 0);
+                
+                // Mix actions from both parents
+                List<Action> allParent1Actions = new List<Action>();
+                List<Action> allParent2Actions = new List<Action>();
+                
+                foreach (Action action in parent1.actions)
+                {
+                    allParent1Actions.Add(action.createDeepClone());
+                }
+                
+                foreach (Action action in parent2.actions)
+                {
+                    allParent2Actions.Add(action.createDeepClone());
+                }
+                
+                // Randomly select actions from both parents
+                List<Unit> movableUnits = offspring.state.getUnitsList(nodeTeamColor, false, true, false);
+                
+                // Track which units have already been assigned actions
+                HashSet<int> assignedUnits = new HashSet<int>();
+                
+                // First, try to add actions from parent1
+                foreach (Action action in allParent1Actions)
+                {
+                    // Skip if we already have an action for this unit
+                    if (assignedUnits.Contains(action.operationUnitId))
+                    {
+                        continue;
+                    }
+                    
+                    // Make sure the unit exists and is actionable
+                    Unit unit = offspring.state.getUnit(action.operationUnitId);
+                    if (unit == null || unit.isActionFinished() || unit.getTeamColor() != nodeTeamColor)
+                    {
+                        continue;
+                    }
+                    
+                    // Only add with 50% probability
+                    if (rnd.NextDouble() < 0.5)
+                    {
+                        offspring.actions.Add(action.createDeepClone());
+                        assignedUnits.Add(action.operationUnitId);
+                    }
+                }
+                
+                // Then add actions from parent2
+                foreach (Action action in allParent2Actions)
+                {
+                    // Skip if we already have an action for this unit
+                    if (assignedUnits.Contains(action.operationUnitId))
+                    {
+                        continue;
+                    }
+                    
+                    // Make sure the unit exists and is actionable
+                    Unit unit = offspring.state.getUnit(action.operationUnitId);
+                    if (unit == null || unit.isActionFinished() || unit.getTeamColor() != nodeTeamColor)
+                    {
+                        continue;
+                    }
+                    
+                    offspring.actions.Add(action.createDeepClone());
+                    assignedUnits.Add(action.operationUnitId);
+                }
+                
+                // For any units still without actions, generate random ones
+                foreach (Unit unit in movableUnits)
+                {
+                    if (unit == null || unit.isActionFinished() || assignedUnits.Contains(unit.getID()))
+                    {
+                        continue;
+                    }
+                    
+                    // Generate a random action for this unit
+                    List<Action> unitActions = new List<Action>();
+                    
+                    // Try attack first with high probability
+                    if (rnd.NextDouble() < ATK_BIAS)
+                    {
+                        List<Action> attackActions = RangeController.getAttackActionList(unit, offspring.state);
+                        List<Action> validAttackActions = new List<Action>();
+                        
+                        foreach (Action attack in attackActions)
+                        {
+                            // Verify the target unit still exists
+                            Unit targetUnit = offspring.state.getUnit(attack.targetUnitId);
+                            if (targetUnit == null)
+                            {
+                                continue;
+                            }
+                            
+                            // For attack actions that involve movement, verify the destination is not occupied
+                            if (attack.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
+                            {
+                                Unit existingUnit = offspring.state.getUnit(attack.destinationXpos, attack.destinationYpos);
+                                if (existingUnit != null && existingUnit.getID() != attack.operationUnitId)
+                                {
+                                    continue;
+                                }
+                            }
+                            
+                            validAttackActions.Add(attack);
+                        }
+                        
+                        if (validAttackActions.Count > 0)
+                        {
+                            // Choose a random attack action
+                            Action action = validAttackActions[rnd.Next(validAttackActions.Count)];
+                            offspring.actions.Add(action);
+                            assignedUnits.Add(unit.getID());
+                            continue;
+                        }
+                    }
+                    
+                    // If no attack or not prioritizing attack, try movement
+                    List<Action> moveActions = new List<Action>();
+                    bool[,] reachable = RangeController.getReachableCellsMatrix(unit, offspring.state);
+                    
+                    for (int x = 1; x < offspring.state.getXsize() - 1; x++)
+                    {
+                        for (int y = 1; y < offspring.state.getYsize() - 1; y++)
+                        {
+                            // Make sure the position is reachable and not occupied by another unit
+                            Unit existingUnit = offspring.state.getUnit(x, y);
+                            if (reachable[x, y] && (existingUnit == null || existingUnit.getID() == unit.getID()))
+                            {
+                                moveActions.Add(Action.createMoveOnlyAction(unit, x, y));
+                            }
+                        }
+                    }
+                    
+                    if (moveActions.Count > 0)
+                    {
+                        // Choose a random move action
+                        Action action = moveActions[rnd.Next(moveActions.Count)];
+                        
+                        // Double-check that the destination is still not occupied
+                        Unit existingUnit = offspring.state.getUnit(action.destinationXpos, action.destinationYpos);
+                        if (existingUnit == null || existingUnit.getID() == action.operationUnitId)
+                        {
+                            offspring.actions.Add(action);
+                            assignedUnits.Add(unit.getID());
+                        }
+                    }
+                }
+                
+                // Apply the finalized actions to the state
+                ApplyActionsToState(offspring.actions, offspring.state);
+            }
+            
+            return offspring;
+        }
+        
+        // Get the lowest fitness among a list of nodes
+        private double GetLowestFitness(List<TBETSNode> nodes)
+        {
+            if (nodes.Count == 0)
+            {
+                return 0.0;
+            }
+            
+            double lowestFitness = nodes[0].fitness;
+            
+            for (int i = 1; i < nodes.Count; i++)
+            {
+                if (nodes[i].fitness < lowestFitness)
+                {
+                    lowestFitness = nodes[i].fitness;
+                }
+            }
+            
+            return lowestFitness;
+        }
+        
+        // Get the best player node from a list
+        private TBETSNode GetBestPlayerNode(List<TBETSNode> nodes)
+        {
+            if (nodes.Count == 0)
+            {
+                return null;
+            }
+            
+            TBETSNode bestNode = nodes[0];
+            
+            for (int i = 1; i < nodes.Count; i++)
+            {
+                if (nodes[i].fitness > bestNode.fitness)
+                {
+                    bestNode = nodes[i];
+                }
+            }
+            
+            return bestNode;
+        }
+        
+        // Get the best action from a node
+        private Action GetBestAction(TBETSNode node, Map map, int teamColor)
+        {
+            // If the node has no actions, return a turn end action
+            if (node == null || node.actions.Count == 0)
+            {
+                return Action.createTurnEndAction();
+            }
+            
+            // Create a list of valid actions from the node's action list
+            List<Action> validActions = new List<Action>();
+            
+            foreach (Action action in node.actions)
+            {
+                // Skip if the unit no longer exists or has already acted
+                Unit unit = map.getUnit(action.operationUnitId);
+                if (unit == null || unit.isActionFinished() || unit.getTeamColor() != teamColor)
+                {
+                    continue;
+                }
+                
+                if (action.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
+                {
+                    // For attack actions, verify the target unit still exists
+                    Unit targetUnit = map.getUnit(action.targetUnitId);
+                    if (targetUnit == null)
+                    {
+                        continue;
+                    }
+                    
+                    // Also verify the destination is not occupied by another unit
+                    Unit existingUnit = map.getUnit(action.destinationXpos, action.destinationYpos);
+                    if (existingUnit != null && existingUnit.getID() != action.operationUnitId)
+                    {
+                        continue;
+                    }
+                    
+                    validActions.Add(action);
+                }
+                else if (action.actionType == Action.ACTIONTYPE_MOVEONLY)
+                {
+                    // For move actions, verify the destination is not occupied by another unit
+                    Unit existingUnit = map.getUnit(action.destinationXpos, action.destinationYpos);
+                    if (existingUnit != null && existingUnit.getID() != action.operationUnitId)
+                    {
+                        continue;
+                    }
+                    
+                    validActions.Add(action);
+                }
+                else
+                {
+                    // Other action types (like turn end) are always valid
+                    validActions.Add(action);
+                }
+            }
+            
+            // If we have valid actions, return the first one (highest priority)
+            if (validActions.Count > 0)
+            {
+                return validActions[0].createDeepClone();
+            }
+            
+            // If no valid actions are found, generate a random action
+            List<Unit> movableUnits = map.getUnitsList(teamColor, false, true, false);
+            
+            if (movableUnits.Count > 0)
+            {
+                Unit randomUnit = movableUnits[rnd.Next(movableUnits.Count)];
+                List<Action> actions = RangeController.getAttackActionList(randomUnit, map);
+                
+                // Prioritize attack actions
+                if (actions.Count > 0)
+                {
+                    return actions[rnd.Next(actions.Count)];
+                }
+                
+                // If no attack actions, try movement
+                bool[,] reachable = RangeController.getReachableCellsMatrix(randomUnit, map);
+                List<Action> moveActions = new List<Action>();
+                
+                for (int x = 1; x < map.getXsize() - 1; x++)
+                {
+                    for (int y = 1; y < map.getYsize() - 1; y++)
+                    {
+                        Unit existingUnit = map.getUnit(x, y);
+                        if (reachable[x, y] && (existingUnit == null || existingUnit.getID() == randomUnit.getID()))
+                        {
+                            moveActions.Add(Action.createMoveOnlyAction(randomUnit, x, y));
+                        }
+                    }
+                }
+                
+                if (moveActions.Count > 0)
+                {
+                    return moveActions[rnd.Next(moveActions.Count)];
+                }
+            }
+            
+            // If all else fails, return a turn end action
+            return Action.createTurnEndAction();
+        }
+    }
+}
