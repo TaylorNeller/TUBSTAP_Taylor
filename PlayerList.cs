@@ -18,7 +18,8 @@ namespace SimpleWars {
             new AI_RHEA(),
             new AI_RHCP(),
             new AI_TBETS(),
-            new AI_EMCTS()
+            new AI_EMCTS(),
+            new AI_EMCTS_FH()
         };
 
         // デフォルトで対戦させたい 2プレイヤーのインデックスをここに登録する

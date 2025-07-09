@@ -57,6 +57,7 @@
     <Compile Include="ActionChecker.cs" />
     <Compile Include="AI\AiTools.cs" />
     <Compile Include="AI\EMCTS\AI_EMCTS.cs" />
+    <Compile Include="AI\EMCTS\AI_EMCTS_FH.cs" />
     <Compile Include="AI\M3Lee\M3_Node.cs" />
     <Compile Include="AI\M_UCT\AI_RHCP.cs" />
     <Compile Include="AI\M_UCT\AI_RHEA.cs" />

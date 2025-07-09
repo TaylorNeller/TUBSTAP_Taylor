@@ -125,6 +125,10 @@ namespace SimpleWars {
                 return false;
             }
         }
+        public int getTurnColor()
+        {
+            return fTurnCount % 2; // 0:RED, 1:BLUE   (RED ALWAYS STARTS)
+        }
         #endregion
 
         /// <summary>
@@ -135,20 +139,25 @@ namespace SimpleWars {
         /// <param name="includingMyMovableUnits">自軍の行動が可能なユニットが欲しい場合</param>
         /// <param name="includingOponentUnits">敵ユニットが欲しい場合</param>
         /// <returns>対応したユニットリスト</returns>
-        public List<Unit> getUnitsList(int teamColor, bool includingMyActionFinishedUnits, bool includingMyMovableUnits, bool includingOponentUnits) {
+        public List<Unit> getUnitsList(int teamColor, bool includingMyActionFinishedUnits, bool includingMyMovableUnits, bool includingOponentUnits)
+        {
             List<Unit> unitsList = new List<Unit>();
 
-            for (int i = 0; i < fUnits.Length; i++) {
+            for (int i = 0; i < fUnits.Length; i++)
+            {
                 if (fUnits[i] == null) continue;
-                if (includingMyActionFinishedUnits &&  fUnits[i].isActionFinished() && fUnits[i].getTeamColor() == teamColor) {
+                if (includingMyActionFinishedUnits && fUnits[i].isActionFinished() && fUnits[i].getTeamColor() == teamColor)
+                {
                     unitsList.Add(fUnits[i]);// 行動が終了したユニット
                     continue;
                 }
-                if (includingMyMovableUnits        && !fUnits[i].isActionFinished() && fUnits[i].getTeamColor() == teamColor) {
+                if (includingMyMovableUnits && !fUnits[i].isActionFinished() && fUnits[i].getTeamColor() == teamColor)
+                {
                     unitsList.Add(fUnits[i]);// 行動が終了していないユニット
                     continue;
                 }
-                if (includingOponentUnits && fUnits[i].getTeamColor() != teamColor) {
+                if (includingOponentUnits && fUnits[i].getTeamColor() != teamColor)
+                {
                     unitsList.Add(fUnits[i]);// 敵チームのユニットリスト
                     continue;
                 }
