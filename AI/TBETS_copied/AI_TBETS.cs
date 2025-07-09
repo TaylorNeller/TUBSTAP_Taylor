@@ -1,0 +1,505 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+
+namespace SimpleWars
+{
+    /// <summary>
+    /// Turn Based Evolutionary Tree-Search (TBETS) Agent
+    /// This algorithm progressively generates a game tree of nodes
+    /// Each node holds the actions for a full turn. There are player nodes and enemy nodes.
+    /// </summary>
+    class AI_TBETS : Player
+    {
+        // Static property to store the current player's color for node checks
+        public static int PlayerColor { get; private set; }
+        
+        // Algorithm parameters
+        private const int NUM_INIT = 3;              // Number of initial randomized player nodes
+        private const int N_ITERS = 250;              // Number of exploration iterations
+        private const double PERCENT_EXPLORE = 0.9;   // Chance to explore existing nodes
+        private const double PERCENT_EXPLOIT = 0.1;   // Chance to exploit unexplored nodes
+        private const double MUTATION_RATE = 0.3;     // Chance to mutate instead of crossover
+        private const int STARTING_POP = 5;           // Number of children for unexplored nodes
+        private const double ATK_BIAS = 0.8;          // Bias towards attack actions in random generation
+        private const long LIMIT_TIME = 9700;         // Time limit for decision making in milliseconds
+
+        // Stopwatch for time management
+        private readonly Stopwatch stopwatch = new Stopwatch();
+        private static long timeLeft = LIMIT_TIME;
+        
+        // Random number generator
+        private readonly Random rnd = new Random();
+        
+        // Tree management components
+        private readonly TBETSTreeManager treeManager;
+        
+        // Saved tree from previous function calls
+        private TBETSNode savedTree = null;
+        
+        /// <summary>
+        /// Constructor for the TBETS AI agent.
+        /// </summary>
+        public AI_TBETS()
+        {
+            treeManager = new TBETSTreeManager(rnd, ATK_BIAS);
+        }
+
+        /// <summary>
+        /// Gets the name of the AI.
+        /// </summary>
+        /// <returns>The name of the AI</returns>
+        public string getName()
+        {
+            return "TBETS";
+        }
+
+        /// <summary>
+        /// Shows the parameter settings of the AI.
+        /// </summary>
+        /// <returns>A string describing the parameter settings</returns>
+        public string showParameters()
+        {
+            return "NUM_INIT = " + NUM_INIT + 
+                   ", N_ITERS = " + N_ITERS + 
+                   ", PERCENT_EXPLORE = " + PERCENT_EXPLORE + 
+                   ", PERCENT_EXPLOIT = " + PERCENT_EXPLOIT +
+                   ", MUTATION_RATE = " + MUTATION_RATE +
+                   ", STARTING_POP = " + STARTING_POP +
+                   ", ATK_BIAS = " + ATK_BIAS;
+        }
+
+        /// <summary>
+        /// Main function to make an action decision. Current function in GameManager doesn't ask for action when none can be taken (all units moved)
+        /// </summary>
+        /// <param name="map">Current game map</param>
+        /// <param name="teamColor">Team color of the current player</param>
+        /// <param name="turnStart">Whether this is the start of a turn</param>
+        /// <param name="gameStart">Whether this is the start of a game</param>
+        /// <returns>The chosen action to perform</returns>
+        public Action makeAction(Map map, int teamColor, bool turnStart, bool gameStart)
+        {
+            stopwatch.Start();
+
+            // Console.WriteLine(map.toString());
+
+            
+            if (turnStart)
+            {
+                timeLeft = LIMIT_TIME;
+            }
+            
+            int movableUnitsCount = map.getUnitsList(teamColor, false, true, false).Count;
+            if (movableUnitsCount == 0)
+            {
+                return Action.createTurnEndAction();
+            }
+            
+            // Set the static PlayerColor for node checks
+            PlayerColor = teamColor;
+            
+            // Get enemy color
+            int enemyColor = (teamColor == 0) ? 1 : 0;
+            
+            // Begin with an empty root enemy node
+            TBETSNode root = null;
+            
+            bool newRoot = true;
+            // If a tree exists
+            if (savedTree != null)
+            {
+                root = savedTree;
+                newRoot = false;
+
+                if (root.State.getTurnCount() > map.getTurnCount())
+                {
+                    // new game, need new root
+                    newRoot = true;
+                    Logger.addLogMessage("TBETS: New game detected; map turn is less than saved root\r\n", teamColor);
+                    // Console.WriteLine("TBETS: New game detected; map turn is less than saved root\r\n");
+                }
+                else {
+                    // If the root is empty (no actions left) then assume we are seeing ENEMY ACTIONS that we predicted that happened
+
+                    // If root is not an enemy node, the turn must have ended and the enemy moved
+                    if (root.Color == teamColor)
+                    {
+                        // search for a matching child node (enemy) with the current map state
+                        newRoot = true;
+                        // Console.WriteLine("New turn detected; matching child node.");
+                        Logger.addLogMessage("TBETS: New turn detected; matching child node.\r\n", teamColor);
+                        // root.PrintRecursive();
+                        foreach (TBETSNode child in root.Children)
+                        {
+                            if (MapsAreEquivalent(map, child.State))
+                            {
+                                // Console.WriteLine("Cache hit - found matching child node.");
+                                Logger.addLogMessage("TBETS: Cache hit - found matching child node.\r\n", teamColor);
+
+                                // prune rest of tree from unexploitedNodes
+                                for (int i = 0; i < root.Children.Count; i++)
+                                {
+                                    TBETSNode otherChild = root.Children[i];
+                                    if (otherChild != child && otherChild.IsPrimary)
+                                    {
+                                        treeManager.RemoveUnexploitedRecursive(otherChild);
+                                    }
+                                }
+
+                                // Set matching child as new root
+                                root = child;
+                                savedTree = root;
+                                newRoot = false;
+
+                                if (root.Children.Count == 1) { // unexploited
+                                    if (root.Explored) {
+                                        // root.PrintSelf();
+                                        // root.PrintRecursive();
+                                        // throw new Exception("AI_TBETS: Expected root to be unexplored if it has only 1 child.");
+                                    }
+                                    else {
+                                        Exploit(root);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            string string_root = "null";
+            if (newRoot)
+            {
+                treeManager.ClearUnexploitedNodes();
+
+                // Console.WriteLine("Cache miss - creating new root node.");
+                Logger.addLogMessage("TBETS: Cache miss - creating new root node.\r\n", teamColor);
+                root = new TBETSNode(enemyColor, 0, null);
+                root.State = map.createDeepClone();
+
+                FitnessUpdate(root);                
+                Exploit(root);
+            }
+            else {
+                string_root = root.StringRecursive();
+                if (treeManager.unexploitedNodes.Count == 0) {
+                    // root.PrintRecursive();
+                    // Console.WriteLine(root.State.toString());
+                    // int[,] map2 = root.State.getFieldTypeArray();
+                    // // print map
+                    // for (int y = 0; y < map2.GetLength(1); y++)
+                    // {
+                    //     for (int x = 0; x < map2.GetLength(0); x++)
+                    //     {
+                    //         Console.Write(map2[x, y] + " ");
+                    //     }
+                    //     Console.WriteLine();
+                    // }
+                    // throw new ArgumentException("AI_TBETS: No unexploited nodes found in the tree. This indicates an issue with the tree management.");
+                    Logger.addLogMessage("TBETS: Loaded root with no available nodes to exploit.\r\n", teamColor);
+                }
+            }
+
+            string exploit_string = "";
+            TBETSNode last_exploited = null;
+            // Main exploration loop
+            for (int i = 0; i < N_ITERS; i++)
+            {
+                // Check for time limit
+                if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
+                {
+                    Logger.addLogMessage("TBETS: Time limit reached after " + i + " iters\r\n", teamColor);
+                    break;
+                }
+                // bool exploreChosen = treeManager.ChooseExploreOrExploit();
+                // bool exploreChosen = rnd.NextDouble() < PERCENT_EXPLORE;
+                bool exploreChosen = rnd.NextDouble() < (PERCENT_EXPLORE-PERCENT_EXPLORE*((double)i / (double)N_ITERS)); // Decrease exploration chance as iterations progress to favor exploitation
+                // Decide whether to explore or exploit
+                if (exploreChosen && treeManager.HasExploredNodes(root))
+                {
+                    // Explore: Pick any explored node, biasing towards nodes closer to the root and higher fitness
+                    TBETSNode selectedNode = treeManager.SelectExploredNode(root, i, N_ITERS);
+                    
+                    // Create a new node with genetic operations
+                    if (rnd.NextDouble() < MUTATION_RATE || selectedNode.Children.Count == 1)
+                    {
+                        // Mutation: Pick 1 well performing node and mutate it
+                        TBETSNode highFitnessNode = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
+                        if (highFitnessNode != null)
+                        {
+                            TBETSNode mutatedNode = treeManager.MutateNode(highFitnessNode);
+                            
+                            // Add the mutated node to the tree
+                            AddNode(selectedNode, mutatedNode);
+                        }
+                    }
+                    else
+                    {
+                        // Crossover: Pick 2 high fitness nodes and create a new node with genetic crossover
+                        TBETSNode parent1 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
+                        TBETSNode parent2 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS, parent1);
+                        TBETSNode offspring = treeManager.CrossoverNodes(parent1, parent2);
+                        AddNode(selectedNode, offspring);
+                    }
+                }
+                else {
+                    if (treeManager.HasUnexploredNodes()) // Exploit
+                    {
+                        // Exploit: Pick any unexplored node from the global list, biasing towards high fitness nodes
+                        TBETSNode selectedNode = treeManager.SelectUnexploredNode();
+                        exploit_string += $"Exploit selected node: {selectedNode}\r\n";
+                        last_exploited = selectedNode; // Keep track of the last exploited node for logging
+                        
+                        Exploit(selectedNode);
+                    }
+                    else {
+                        // root.PrintRecursive();
+                        // Console.WriteLine(root.State.toString());
+                        // int[,] map2 = root.State.getFieldTypeArray();
+                        // // print map
+                        // for (int y = 0; y < map2.GetLength(1); y++)
+                        // {
+                        //     for (int x = 0; x < map2.GetLength(0); x++)
+                        //     {
+                        //         Console.Write(map2[x, y] + " ");
+                        //     }
+                        //     Console.WriteLine();
+                        // }
+                        // throw new ArgumentException("AI_TBETS: No unexplored nodes available for exploitation. Full tree explored? unlikely.");
+                        Logger.addLogMessage("TBETS: No unexplored nodes available for exploitation.\r\n", teamColor);
+                    }
+                }
+            }
+            
+            // Find the best action sequence from the root's children
+            TBETSNode bestNode = treeManager.GetBestPlayerNode(root);
+            if (bestNode == null) {
+                root.PrintChildren();
+                root.PrintRecursive();
+                foreach (TBETSNode node in root.Children) {
+                    if (treeManager.CanBeExploited(node)) {
+                        Console.WriteLine($"Node {node} can be exploited.");
+                    }
+                }
+                Console.WriteLine("Exploitations: " + exploit_string);
+                Console.WriteLine("Original root:");
+                Console.WriteLine(string_root);
+                last_exploited.PrintSelf();
+                last_exploited.Parent.PrintSelf();
+                last_exploited.Parent.Parent.PrintSelf();
+                last_exploited.GetRoot().PrintRecursive();
+                throw new ArgumentException("AI_TBETS: No explored nodes found in the list to select from.");
+            }
+
+            // debugging print
+            // root.PrintRecursive();
+            // throw new Exception("AI_TBETS: Debugging print - root tree printed.");
+
+            if (bestNode.Explored == false)
+            {
+                Console.WriteLine("TBETS: Best node is unexplored. This should not happen.");
+            }
+
+            // verify fitness integrity
+            root.FitnessUpdate(PlayerColor);
+            root.FitnessIntegrityCheck(PlayerColor);
+            
+            // Return the first action from the best node
+            Action firstAction = null;
+            
+            // Get the first action from the best node with highest fitness
+            firstAction = bestNode.Actions[0].createDeepClone();
+            
+            // Prune branches that don't start with this action
+            savedTree = treeManager.PruneTreeByFirstAction(root, bestNode, firstAction);
+            
+            stopwatch.Stop();
+            Logger.addLogMessage("TBETS: Time used: " + stopwatch.ElapsedMilliseconds + "ms\r\n", teamColor);
+            timeLeft -= stopwatch.ElapsedMilliseconds;
+            stopwatch.Reset();
+
+            // Console.WriteLine("TBETS: Chosen action: " + (firstAction != null ? firstAction.ToString() : "TURN END"));
+            
+            return firstAction;
+        }
+
+        private void Exploit(TBETSNode selectedNode) {
+            // First, ensure the node has a phantom child if it doesn't already have one
+            TBETSNode phantomChild = null;
+            
+            // Look for existing phantom child
+            foreach (TBETSNode child in selectedNode.Children)
+            {
+                if (child.IsPhantom && child.IsPlayerNode != selectedNode.IsPlayerNode)
+                {
+                    phantomChild = child;
+                    break;
+                }
+            }
+
+            if (!selectedNode.IsPrimary) {
+                throw new Exception("AI_TBETS: Expected selectedNode to be a primary node.");
+            }
+
+            if (selectedNode.Explored) {
+                selectedNode.PrintSelf();
+                selectedNode.GetRoot().PrintRecursive();
+                throw new Exception("AI_TBETS: Expected selectedNode to be unexplored.");
+            }
+            
+            if (phantomChild == null)
+            {
+                throw new Exception("AI_TBETS: Expected phantom child to exist but none was found.");
+            }
+            phantomChild.IsPhantom = false;
+            phantomChild.CalculateStateHash();
+            FitnessUpdate(phantomChild);
+
+            // List<TBETSNode> childrenToAdd = new List<TBETSNode>();
+
+            // Generate the rest of the STARTING_POP randomly initialized children
+            for (int j = 0; j < STARTING_POP-1; j++)
+            {
+                // Create new child node
+                int childColor = selectedNode.Color == 0 ? 1 : 0;
+                TBETSNode childNode = new TBETSNode(childColor, selectedNode.Depth + 1, selectedNode);
+                childNode.State = selectedNode.State.createDeepClone();
+                
+                // Generate random actions with attack bias
+                childNode.setActions(treeManager.GenerateRandomActions(childNode));
+                
+                // Apply actions to the state
+                childNode.ApplyActions();
+                childNode.EndTurn();
+
+                // Add the child node to the tree
+                AddNode(selectedNode, childNode);
+                // childrenToAdd.Add(childNode);
+            }
+        
+            // // Update the node's fitness to be the lowest fitness among the children
+            // if (selectedNode.Children.Count > 0)
+            // {
+            //     double lowestFitness = treeManager.GetLowestFitness(selectedNode.Children);
+            //     treeManager.UpdateNodeFitness(selectedNode, lowestFitness);
+            // }
+            
+            // Mark as explored
+            selectedNode.Explored = true;
+            treeManager.RemoveExploitedNode(selectedNode);
+
+            // exploit should generate multiple children
+            if (selectedNode.Children.Count == 1) {
+                // foreach (TBETSNode child in childrenToAdd) {
+                //     child.PrintSelf();
+                // }
+                // throw new Exception("AI_TBETS: Exploit should not result in a single child node. This indicates an issue with the child generation.");
+            }
+        }
+        
+        /// <summary>
+        /// Add a node to the tree. This method handles checking for duplicates, adding it to children,
+        /// calculating fitness, and adding to unexploited nodes.
+        /// </summary>
+        /// <param name="parent">Parent node</param>
+        /// <param name="node">Node to add</param>
+        private void AddNode(TBETSNode parent, TBETSNode node)
+        {
+            if (parent == null || node == null)
+                throw new ArgumentNullException("Parent or node cannot be null.");
+                
+            // Check for identical action sequences - don't add if sequences match
+            foreach (TBETSNode child in parent.Children)
+            {
+                if (child.HasSameActions(node))
+                {
+                    return;
+                }
+            }
+        
+            node.CalculateStateHash();
+            
+            // Check for state equivalence with existing nodes
+            bool isDuplicate = treeManager.CheckForDuplicates(parent.Children, node);
+            
+            // Add the node as a child regardless of whether it's a duplicate
+            parent.AddChild(node);
+            
+            // Only calculate fitness and add to unexploited nodes if it's a primary node
+            if (node.IsPrimary)
+            {
+                FitnessUpdate(node);
+            }
+
+            if (node.Actions.Count == 0)
+            {
+                throw new Exception("AI_TBETS: Node with no actions should not be added.");
+            }
+        }
+
+        private void FitnessUpdate(TBETSNode node) {
+            treeManager.EvaluateFitness(node, PlayerColor);
+            treeManager.PropagateFitness(node, PlayerColor);
+            if (!node.IsLeaf) {
+                treeManager.AddUnexploitedNode(node);
+            }
+        }
+        
+        /// <summary>
+        /// Check if two maps represent equivalent game states.
+        /// </summary>
+        /// <param name="map1">First map</param>
+        /// <param name="map2">Second map</param>
+        /// <returns>True if maps are equivalent</returns>
+        private bool MapsAreEquivalent(Map map1, Map map2)
+        {
+            if (map1 == null || map2 == null)
+            {
+                return false;
+            }
+            
+            // Compare unit lists
+            List<Unit> units1 = map1.getUnitsList(0, true, true, false);
+            units1.AddRange(map1.getUnitsList(1, true, true, false));
+            
+            List<Unit> units2 = map2.getUnitsList(0, true, true, false);
+            units2.AddRange(map2.getUnitsList(1, true, true, false));
+            
+            // Quick check - unit counts must match
+            if (units1.Count != units2.Count)
+            {
+                return false;
+            }
+            
+            // Sort units by ID for consistent comparison
+            units1 = units1.OrderBy(u => u.getID()).ToList();
+            units2 = units2.OrderBy(u => u.getID()).ToList();
+            
+            // Compare each unit
+            for (int i = 0; i < units1.Count; i++)
+            {
+                Unit unit1 = units1[i];
+                Unit unit2 = units2[i];
+                
+                if (unit1.getID() != unit2.getID() ||
+                    unit1.getXpos() != unit2.getXpos() ||
+                    unit1.getYpos() != unit2.getYpos() ||
+                    unit1.getHP() != unit2.getHP() ||
+                    unit1.getTeamColor() != unit2.getTeamColor() ||
+                    unit1.getName() != unit2.getName())
+                {
+                    return false;
+                }
+            }
+            
+            // Compare turn count
+            if (map1.getTurnCount() != map2.getTurnCount())
+            {
+                return false;
+            }
+            
+            return true;
+        }
+    }
+}

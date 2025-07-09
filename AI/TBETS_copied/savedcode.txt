@@ -1,0 +1,75 @@
+
+// for saving states in pruning where unit kills itself in a different way
+
+if (action.operationUnitId == childAction.operationUnitId &&
+                            action.actionType == Action.ACTIONTYPE_MOVEANDATTACK &&
+                            action.targetUnitId == childAction.targetUnitId && target != -1
+                            && chosenChild.IsSameState(child)) {
+                            // same unit attacking same target
+                            List<Unit> aliveUnits = new List<Unit>(chosenChild.State.getUnitsList(chosenChild.Color, true, true, false));
+                            List<Unit> aliveUnits2 = new List<Unit>(child.State.getUnitsList(child.Color, true, true, false));
+                            bool isAlive = false;
+                            foreach (Unit unit in aliveUnits) {
+                                if (unit.getID() == action.operationUnitId) {
+                                    isAlive = true;
+                                    break;
+                                }
+                            }
+                            foreach (Unit unit in aliveUnits2) {
+                                if (unit.getID() == childAction.operationUnitId) {
+                                    isAlive = true;
+                                    break;
+                                }
+                            }
+                            if (!isAlive) {
+                                Console.WriteLine("Equivalent actions (" + action.toString() + ") (" + child.State.toString() + ")");
+                                Console.WriteLine(chosenChild.State.toString());
+                                Console.WriteLine(child.State.toString());
+                            }
+                        }
+
+
+
+
+// for keeping primary rather than changing duplicate into primary
+                    // true fix: set primary node to persist rather than duplicate
+                    // make action happen in primary
+                    Action toHappen = null;
+                    TBETSNode primary = child.PrimaryNode;
+                    foreach (Action a in primary.Actions) {
+                        if (a.fromXpos == action.fromXpos && a.fromYpos == action.fromYpos) {
+                            toHappen = a;
+                            break;
+                        }
+                    }
+                    if (toHappen == null) {
+                        root.PrintChildren();
+                        Console.WriteLine("Action: " + action.toString());
+                        Console.WriteLine("Primary node: ");
+                        child.PrimaryNode.PrintSelf();
+                        Console.WriteLine(child.PrimaryNode.State.toString());
+                        Console.WriteLine("Duplicate node: ");
+                        child.PrintSelf();
+                        Console.WriteLine(child.State.toString());
+
+                        throw new Exception("Pruning: No action found in primary node that matches the action from child node.");
+                    }
+
+                    // check that the action is legal
+                    Map copy = root.State.createDeepClone();
+                    foreach (Action a in primary.TakenActions) {
+                        copy.executeAction(a); // apply all actions to the copy of the map
+                    }
+                    if (!ActionChecker.isTheActionLegalMove_Silent(toHappen, copy)) {
+                        throw new Exception("Pruning: Action in primary node is not legal.");
+                    }
+
+                    primary.Actions.Remove(toHappen);
+                    primary.TakenActions.Add(toHappen);
+
+                    // if duplicate is now identical to primary, remove duplicate
+                    if (child.HasSameActions(primary)) {
+                        duplicatesToRemove.Add(child);
+                    }
+                    // Add primary back to root
+                    nodesToAdd.Add(primary);
