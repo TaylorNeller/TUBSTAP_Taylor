@@ -29,6 +29,22 @@ def read_map(filename):
     
     game_maps[map_id] = [map_matrix, unit_list]
 
+def read_map_str(map_str): 
+    # read MAP[x,x,x,...,x]; lines into map matrix
+    # read UNIT[x,y,typestr,team,hp,moved]; lines into Unit list
+    map_matrix = []
+    unit_list = []
+    for line in map_str.split('\n'):
+        if line.startswith('MAP['):
+            map_matrix.append([int(x) for x in line[4:-2].split(',')])
+        if line.startswith('UNIT['):
+            # read unit data, converting unit type to integer based on index in unitNames
+            unit_data = line[5:-2].split(',')
+            unit_data[2] = ConstsData.unitNames.index(unit_data[2])
+            unit_list.append(UnitData(*[int(x) for x in unit_data]))
+    
+    return map_matrix, unit_list
+
 def read_all_maps(directory):
     # Get all files in directory
     files = os.listdir(directory)
@@ -74,6 +90,34 @@ def annotate_battle_results(filename):
             move = [int(move[0]), int(move[1]), int(move[2]), int(move[3]), dir]
             
             game_move[map_id] = [result, move]
+
+def parse_one_result(line):
+    data = line.strip().split(',')
+    map_name = data[0]
+    win_cnt_red = int(data[1])
+    win_cnt_blue = int(data[2])
+    # draw_cnt = int(data[3])
+    move = data[4].split(':')
+
+    # doesnt work when not using genmap format 
+    # map_id = int(map_name.split('genmap')[1].split('.')[0])
+    
+    result = 0
+    if win_cnt_red > win_cnt_blue:
+        result = 1
+    elif win_cnt_blue > win_cnt_red:
+        result = -1
+    
+    # find direction of attack in move
+    dirs = [(0,0), (1,0), (0,1), (-1,0), (0,-1)]
+    dx = int(move[4]) - int(move[2])
+    dy = int(move[5]) - int(move[3])
+    if (dx,dy) not in dirs:
+        print('dx =', dx, 'dy =', dy, 'dirs =', dirs, 'move =', move)
+    dir = dirs.index((dx,dy))
+
+    move = [int(move[0]), int(move[1]), int(move[2]), int(move[3]), dir]
+    return result, move
 
 
 def load_gcn_matrices(data_csv):

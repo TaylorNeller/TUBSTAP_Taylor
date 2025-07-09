@@ -1,3 +1,12 @@
 bin/Release/
 .mono/
 .venv/
+Taylor/archive/
+Taylor/autobattle/
+Taylor/cs_original/
+Taylor/logs/
+Taylor/models/
+Taylor/output-csv/
+Taylor/py-legacy/
+Taylor/__pycache__/
+Taylor/port/__pycache__/

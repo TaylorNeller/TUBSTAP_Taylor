@@ -29,6 +29,7 @@ class Unit:
         """Check if the unit is destroyed (HP is 0 or less)"""
         return self.HP == 0
 
+
     def get_x_pos(self):
         """Get the X position on the map"""
         return self.x_pos

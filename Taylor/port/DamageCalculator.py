@@ -15,11 +15,19 @@ class DamageCalculator:
         Calculate attack damage from Map and Action.
         """
         if action.action_type == Action.ACTIONTYPE_MOVEONLY:
-            Logger.show_dialog_message("DamageCalculator: calculate_damages(1): Damage is being calculated for a non-attack action type.")
+            print("DamageCalculator: calculate_damages(1): Damage is being calculated for a non-attack action type.")
             return [0, 0]
         else:
             atk_unit = map.get_unit(action.operation_unit_id)
             target_unit = map.get_unit(action.target_unit_id)
+            if atk_unit is None:
+                print("DamageCalculator: calculate_damages(2): The attacking unit is None.")
+                print(map.to_string())
+                print(action.to_string())
+            if target_unit is None:
+                print("DamageCalculator: calculate_damages(2): The target unit is None.")
+                print(map.to_string())
+                print(action.to_string())
             return DamageCalculator.calculate_damages_unit_map_pos(atk_unit, target_unit, map, action.destination_x_pos, action.destination_y_pos)
 
     @staticmethod

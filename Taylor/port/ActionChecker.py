@@ -25,6 +25,7 @@ class ActionChecker:
         """
         Display a message.
         """
+        print('ActionChecker: ' + message)
         ActionChecker.last_error = message
         if show_dialog:
             Logger.show_dialog_message(message)
@@ -74,10 +75,10 @@ class ActionChecker:
         if dest_unit is not None and dest_unit.get_ID() != op_unit.get_ID():
             ActionChecker.log(show_dialog, "ActionChecker: There is already another unit at the destination.")
             return False
-        elif act.destination_x_pos < 1 or act.destination_x_pos > map.get_x_size() - 2:
+        elif act.destination_x_pos < 0 or act.destination_x_pos > map.get_x_size() - 1:
             ActionChecker.log(show_dialog, "ActionChecker: Destination X coordinate is outside the map range.")
             return False
-        elif act.destination_y_pos < 1 or act.destination_y_pos > map.get_y_size() - 2:
+        elif act.destination_y_pos < 0 or act.destination_y_pos > map.get_y_size() - 1:
             ActionChecker.log(show_dialog, "ActionChecker: Destination Y coordinate is outside the map range.")
             return False
 

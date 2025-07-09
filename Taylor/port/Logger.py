@@ -2,6 +2,7 @@ import os
 import AutoBattleSettings
 from Consts import Consts
 from Action import Action
+from UnitData import *
 
 # from Settings
 class Logger:
@@ -188,7 +189,7 @@ class Logger:
             write_title_flag = True
             # make file
             Logger.active_file = open(file_name, 'w')
-            Logger.active_file.write("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove\n")
+            # Logger.active_file.write("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove\n")
         Logger.active_file.write(f"{map_name},{win_cnt_of_red[0]},{win_cnt_of_blue[0]},{draw_cnt},{first_move}\n")
 
     @staticmethod
@@ -219,9 +220,58 @@ class Logger:
                        f"{win_cnt_of_red_latter[1]},{win_cnt_of_blue_latter[1]},"
                        f"{AutoBattleSettings.IsHPRandomlyDecreased},{AutoBattleSettings.IsPositionRandomlyMoved}\n")
     
+    file_log_strs = []
+    @staticmethod
+    def log_file(str):
+        Logger.file_log_strs.append(str)
+        return str
+
+    @staticmethod
+    def flush_file_log(file_name):
+        with open(file_name, 'w') as file:
+            for str in Logger.file_log_strs:
+                file.write(str)
+        Logger.file_log_strs.clear()
+
     @staticmethod
     def flush():
         Logger.active_file.flush()
+
+    states = []
+    @staticmethod
+    def add_turn_record(map, move, phase):
+        # clone map matrix (map.map_field_type)
+        map_matrix = []
+        for row in map.map_field_type:
+            map_matrix.append(row.copy())
+        # create UnitData objects from units in map
+        unit_list = []
+        for unit in map.units:
+            if unit is not None:
+                unit_str = unit.spec.get_spec_name()
+                type = ConstsData.unitNames.index(unit_str)
+                moved = 1 if unit.is_action_finished() or unit.get_team_color() != phase else 0
+                unit_list.append(UnitData(unit.x_pos, unit.y_pos, type, unit.team_color, unit.HP, moved))
+        Logger.states.append((map_matrix, unit_list, str(move)))
+
+    @staticmethod
+    def return_game_log(win_cnt_of_red, win_cnt_of_blue, draw_cnt):
+        result = 0
+        if win_cnt_of_red == 1:
+            result = 1
+        elif win_cnt_of_blue == 1:
+            result = -1
+        elif draw_cnt != 1:
+            # raise error
+            raise ValueError("Invalid win counts when logging game")
+
+        # for testing purposes, truncate all values of state except last value
+        # Logger.states = Logger.states[-1:]
+        states = Logger.states
+        Logger.states = []
+
+        return states, result
+
             
 
 

@@ -1,7 +1,9 @@
 # from Consts import Consts
-from SimpleAI import AI_Sample_MaxActEval
+from AI_Simple import AI_Sample_MaxActEval
+from AI_MCTS import AI_M_UCT
+from AI_Minimax import AI_Minimax
 
-# from HumanPlayer import HumanPlayer
+from HumanPlayer import HumanPlayer
 # from NetworkPlayer import NetworkPlayer
 # from AI_MSSystem import AI_MSSystem
 # from AI_M_UCT import AI_M_UCT
@@ -17,12 +19,9 @@ class PlayerList:
     # List of player objects. Please register the necessary classes here.
     registered_player_list = [
         AI_Sample_MaxActEval(),
-        # HumanPlayer(),  # Don't change this
-        # NetworkPlayer(),  # Don't change this
-        # AI_MSSystem(),
-        # AI_M_UCT(),
-        # AI_M3Lee_hull(),
-        # AI_SatD2()
+        HumanPlayer(),  # Don't change this
+        AI_Minimax(),
+        AI_M_UCT()
     ]
 
     # Register the indices of the 2 players you want to compete by default here.

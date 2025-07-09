@@ -1,4 +1,5 @@
 class Consts:
+    FIELD_BARRIER = 0
     # Number of terrain types
     FIELDTYPENUM = 7
 

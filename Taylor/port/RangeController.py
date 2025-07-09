@@ -37,9 +37,11 @@ class RangeController:
                     new_x = x + RangeController.DX[r]  # Up, down, left, right
                     new_y = y + RangeController.DY[r]
 
+                    # print(map.to_string())
+
                     new_rest = rest_step - unit_spec.get_move_cost(map.get_field_type(new_x, new_y))  # Remaining movement cost after moving
                     if new_rest < 0:
-                        continue  # Hit the surroundings or not enough movement power → Cannot enter
+                        continue  # Hit the edge or not enough movement power → Cannot enter
 
                     u = map.get_unit_at(new_x, new_y)
                     if u is not None:
@@ -78,8 +80,9 @@ class RangeController:
                 for i in range(4):  # Look at the up, down, left, right of the enemy unit
                     check_x = pos_x + RangeController.DX[i]
                     check_y = pos_y + RangeController.DY[i]
-
-                    if op_units_movable_range[check_x][check_y]:  # It means you can come to the position checkX, checkY and attack
+                    # if within bounds
+                    if 0 <= check_x < map.get_x_size() and 0 <= check_y < map.get_y_size() and \
+                        op_units_movable_range[check_x][check_y]:  # It means you can come to the position checkX, checkY and attack
                         actions.append(Action.create_attack_action(op_unit, check_x, check_y, en_unit))
         else:  # If it's an indirect attack type
             u_spec = op_unit.get_spec()
@@ -103,8 +106,8 @@ class RangeController:
             movable_cells_matrix = RangeController.get_reachable_cells_matrix(op_unit, map)  # opUnit's movable range
             cells = [[False] * map.get_y_size() for _ in range(map.get_x_size())]
 
-            for x in range(1, map.get_x_size() - 1):
-                for y in range(1, map.get_y_size() - 1):
+            for x in range(map.get_x_size()):
+                for y in range(map.get_y_size()):
                     if map.get_unit_at(x, y) is not None and \
                             map.get_unit_at(x, y).get_team_color() == op_unit.get_team_color():
                         continue
@@ -113,16 +116,16 @@ class RangeController:
                     for i in range(4):  # Look at the up, down, left, right of the enemy unit
                         check_x = x + RangeController.DX[i]
                         check_y = y + RangeController.DY[i]
-
-                        if movable_cells_matrix[check_x][check_y]:
+                        if 0 <= check_x < map.get_x_size() and 0 <= check_y < map.get_y_size() and \
+                            movable_cells_matrix[check_x][check_y]:
                             cells[x][y] = True  # Change to true as attackable range
 
             attackable = cells
         else:  # If it's an indirect attack type
             u_spec = op_unit.get_spec()
 
-            for x in range(1, map.get_x_size() - 1):
-                for y in range(1, map.get_y_size() - 1):
+            for x in range(map.get_x_size()):
+                for y in range(map.get_y_size()):
                     dist = abs(x - op_unit.get_x_pos()) + abs(y - op_unit.get_y_pos())  # Distance between each (x, y) coordinate and yourself
                     if u_spec.get_unit_min_attack_range() <= dist <= u_spec.get_unit_max_attack_range():  # If it's within the attackable range
                         attackable[x][y] = True  # Positions within the attackable range are set to true

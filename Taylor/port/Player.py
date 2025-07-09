@@ -1,3 +1,5 @@
+from MTools import MTools
+
 class Player:
     """
     If you want to create a new AI, you need to implement this interface.
@@ -27,3 +29,14 @@ class Player:
         :return: Parameter information
         """
         pass
+
+    def get_valid_actions_for_state(self, map_, team_color):
+        """Get all valid actions for the current state."""
+        valid_actions = []
+        units = map_.get_units_list(team_color, False, True, False)
+        
+        for unit in units:
+            unit_actions = MTools.get_unit_actions(unit, map_)
+            valid_actions.extend(unit_actions)
+        
+        return valid_actions

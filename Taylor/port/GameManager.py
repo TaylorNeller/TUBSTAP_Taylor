@@ -13,10 +13,12 @@ from PlayerList import PlayerList
 
 
 class GameManager:
-    def __init__(self, form, map_file_name):
+    def __init__(self, form, map_file_name, raw_map_str=None):
         self.sgf_active = False
         self.map_file_name = map_file_name
-        self.map = Map(self.map_file_name)
+        self.raw_map_str = raw_map_str
+        # print(f'ginit {raw_map_str is None}')
+        self.map = Map(self.map_file_name, raw_map_str=raw_map_str)
         self.phase = Consts.RED_TEAM
         self.form = form
         self.draw_manager = None
@@ -31,6 +33,7 @@ class GameManager:
         self.game_end_flag = False
         self.auto_battle_result_file_name = None
         self.auto_battle_combat_log_file_name = None
+        self.log_flag = False
 
         # Fields for statistics in auto-battle mode
         self.battle_cnt_of_now = 0
@@ -97,12 +100,13 @@ class GameManager:
     def get_turn_count(self):
         return self.map.get_turn_count()
 
-    def init_game(self):
+    def init_game(self, log_flag=False):
+        self.log_flag = log_flag
         self.players[0] = PlayerList.get_player(self.form.get_player(Consts.RED_TEAM))
         self.players[1] = PlayerList.get_player(self.form.get_player(Consts.BLUE_TEAM))
 
         if self.auto_battle_flag:
-            self.map = Map(self.map_file_name)
+            self.map = Map(self.map_file_name, raw_map_str=self.raw_map_str)
             # self.make_random_noise()
             self.map.set_turn_count(0)
 
@@ -113,8 +117,8 @@ class GameManager:
         self.sgf_manager.set_initialize_map(self.map)
         self.sgf_manager.set_player_name(self.players[0].get_name(), self.players[1].get_name())
         # self.draw_manager.redraw_map(self.map)
-
-        self.execute_game()
+        
+        return self.execute_game()
 
     def enable_auto_battle(self):
         self.auto_battle_flag = True
@@ -122,10 +126,10 @@ class GameManager:
     def new_game(self):
         if (self.auto_battle_flag and self.battle_cnt_of_now >= AutoBattleSettings.NumberOfGamesPerMap // 2 and
             AutoBattleSettings.IsPosChange):
-            self.map = Map(self.map_file_name, True)
+            self.map = Map(self.map_file_name, True, raw_map_str=self.raw_map_str)
             self.phase = Consts.BLUE_TEAM
         else:
-            self.map = Map(self.map_file_name)
+            self.map = Map(self.map_file_name, raw_map_str=self.raw_map_str)
             self.phase = Consts.RED_TEAM
 
         self.make_random_noise()
@@ -168,10 +172,11 @@ class GameManager:
                 self.game_end_phase()
                 self.new_game()
             if self.battle_cnt_of_now == AutoBattleSettings.NumberOfGamesPerMap // 2:
-                Logger.log_battle_result_file(self.auto_battle_result_file_name, self.map_file_name,
-                                                self.win_cnt_of_red, self.win_cnt_of_blue,
-                                                self.draw_game_cnt, self.first_move, self.debug_string)
-                break
+                if self.log_flag:
+                    Logger.log_file(f"{self.map_file_name},{self.win_cnt_of_red[0]},{self.win_cnt_of_blue[0]},{self.draw_game_cnt},{self.first_move}\n")
+                # return f"{self.map_file_name},{self.win_cnt_of_red[0]},{self.win_cnt_of_blue[0]},{self.draw_game_cnt},{self.first_move}\n"
+                return Logger.return_game_log(self.win_cnt_of_red[0], self.win_cnt_of_blue[0], self.draw_game_cnt)
+
 
     def is_all_unit_dead(self):
         if self.map.get_num_of_alive_color_units(Consts.RED_TEAM) == 0:
@@ -217,7 +222,15 @@ class GameManager:
                 # Let the AI generate an action (generate an action for 1 unit)
                 act = self.players[self.phase].make_action(copy_map, self.phase, turn_start_flag, game_start_flag)
                 if not ActionChecker.is_the_action_legal_move(act, self.map):
-                    Logger.show_dialog_message("The move is not legal.")
+                    print(self.map.map_to_string())
+                    print(self.map.raw_map)
+                    print(f"Action: {act.to_string()}")
+                    print(f"Color: {team_color}")
+                    raise Exception("Illegal move")
+                
+                # print(self.map.to_string())
+                # print(f"Action: {act.to_string()}")
+
                 if act.action_type == Action.ACTIONTYPE_TURNEND:
                     turn_end_flag = True
 
@@ -231,6 +244,7 @@ class GameManager:
 
             if self.first_move is None:
                 self.first_move = act
+            Logger.add_turn_record(self.map, act, self.phase)
 
             if self.sgf_active:
                 SGFManager.record_comment()
