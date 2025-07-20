@@ -53,11 +53,15 @@ namespace SimpleWars
                 // }
                 // prev (best): .5 exploreProb - linear iteration scaling
                 // current: .4 exploreProb + linear children annealing - linear iter scaling
-                double exploreProb = 0.5;
-                // exploreProb = exploreProb + exploreProb * (1.0/(double)Math.Pow(current.Children.Count,1)); // prioritizes nodes with less children
-                if (rnd.NextDouble() < exploreProb - exploreProb * (double)iter / (double)n_iters){ // scaling based on iteration
-                    break;
-                }
+
+
+                // double exploreProb = 0.5;
+                // // exploreProb = exploreProb + exploreProb * (1.0/(double)Math.Pow(current.Children.Count,1)); // prioritizes nodes with less children
+                // if (rnd.NextDouble() < exploreProb - exploreProb * (double)iter / (double)n_iters){ // scaling based on iteration
+                //     break;
+                // }
+
+
                 // if (rnd.NextDouble() < exploreProb) {
                 //     break;
                 // }
@@ -67,6 +71,20 @@ namespace SimpleWars
                 // {
                 //     break;
                 // }
+
+                // Progressive widening
+                int m = current.Children.Count;
+                int n = current.nDescendents;
+                double k = 2.0;
+                double alpha = 0.4;
+                double threshold = k * Math.Pow(n, alpha);
+                if (m < threshold)
+                {
+                    if (rnd.NextDouble() < 0.95)
+                    {
+                        break;
+                    }
+                }
 
                 // Select a child node
                 int childIndex = UCB_Explore(current);
@@ -89,8 +107,8 @@ namespace SimpleWars
                     continue; // Skip duplicate nodes
                 }
 
-                double parentVisits = node.nDescendents;
-                double childVisits = child.nDescendents;
+                double parentVisits = node.nDescendents+1;
+                double childVisits = child.nDescendents+1;
                 
                 // If node hasn't been visited, return it immediately
                 if (child.nDescendents == 0) {
@@ -99,6 +117,8 @@ namespace SimpleWars
                     }
                     else {
                         node.GetRoot().PrintRecursive();
+                        Console.WriteLine("child:");
+                        child.PrintRecursive();
                         throw new Exception("TBETSNodeSelector: child of explored node exists with no child.");
                     }
                 }
@@ -160,8 +180,8 @@ namespace SimpleWars
         private int UCB(List<TBETSNode> candidates, double totalVisits, int iter_n, int n_iters)
         {
             double C = 1.414; // Exploration parameter (sqrt(2) is common)
-            // double depthBias =  .4; // Bias towards nodes closer to the root
-            double depthBias = .6 * (1 - Math.Pow((double)iter_n / (double)n_iters, 2)); // Annealing schedule for depth bias, bias towards earlier iterations
+            double depthConst = .6;
+            double depthBias = depthConst * (1 - Math.Pow((double)iter_n / (double)n_iters, 2)); // Annealing schedule for depth bias, bias towards earlier iterations
             double bestScore = double.MinValue;
             int bestIndex = 0;
                         
@@ -342,7 +362,19 @@ namespace SimpleWars
 
         if (bestNode == null)
         {
-            return null;
+            // pick best fitness unexplored node
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                if (bestNode == null || (nodes[i].Fitness >= bestNode.Fitness))
+                {
+                    bestNode = nodes[i];
+                }
+            }
+            Console.WriteLine("TBETSNodeSelector: No explored nodes found when selecting best player node. Selecting best unexplored node instead.");
+
+            if (bestNode == null) {
+                return null;
+            }
         }
         
         // If the best node found is a duplicate, check if there's a primary node with the same fitness

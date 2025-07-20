@@ -1,4 +1,3 @@
-#r "System.Core.dll"
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -12,21 +11,6 @@ static class ConstsData
     public static List<string> unitNames = new List<string>() {
         "attacker", "fighter", "antiair", "infantry", "panzer", "cannon"
     };
-}
-static class GameCLI
-{
-    // Placeholder for the autobattle function from the Python `port.GameCLI.run_autobattle`.
-    // In actual usage, you'd implement the run_autobattle logic here.
-    public static (List<object> states, int result) run_autobattle(
-        int user1, int user2, string map, int games, string raw_map_str)
-    {
-        // Return dummy data: no states, and a random winner (0, 1, or “draw 2”).
-        // The Python code tries to do local search until winner changes.
-        Random rng = new Random();
-        int randomWinner = rng.Next(0, 3); 
-        // If randomWinner == 2, treat that as a "draw".
-        return (new List<object>(), randomWinner == 2 ? 0 : randomWinner);
-    }
 }
 static class MapUtils
 {
@@ -42,20 +26,22 @@ public static class MapGen
     // Mirror the Python static fields with default values
     public static string terrain_type = "random";    // "plains" or "random"
     public static string unit_dist     = "unit-list";// "no-cannon", "ground-melee", "inf-tank", "unit-list"
-    public static List<string> unit_list = new List<string> { "infantry", "antiair", "panzer", "cannon", "infantry", "antiair", "panzer", "cannon" };
-    public static int n_red  = 4;
-    public static int n_blue = 4;
+    // public static List<string> unit_list = new List<string> { "infantry", "antiair", "panzer", "cannon", "infantry", "antiair", "panzer", "cannon" };
+    public static List<string> unit_list = new List<string> { "infantry", "infantry", "panzer", "panzer", "cannon", "antiair", "fighter", "attacker", "infantry", "infantry", "panzer", "panzer", "cannon", "antiair", "fighter", "attacker" };
+    public static int n_red = 8;
+    public static int n_blue = 8;
     public static int seed   = -1;
-    public static int map_x  = 10;
-    public static int map_y  = 10;
+    public static int map_x  = 12;
+    public static int map_y  = 12;
     public static bool map_padded = true;
+    public static bool CORNER_BIAS = true;          // Bias unit placement to corners
     public static int n_iters = 50;
     public static int turn_limit = 30;        // Also determines starting player in some usage
     public static bool local_search_flag = false;
     public static bool starting_exhaust = false;
-    public static int player1 = 0;           // for local search usage
-    public static int player2 = 0;           // for local search usage
-    public static double fta_counter = 1.1;  // First turn advantage counter
+    public static int player1 = 2;           // for local search usage
+    public static int player2 = 2;           // for local search usage
+    public static double fta_counter = 1.1;  // First turn advantage counter (1.1 - 4u)
 
     /// <summary>
     /// Generates a map file (or returns its string) that mirrors the logic from the original Python code.
@@ -90,7 +76,7 @@ public static class MapGen
                     if (terrain_type == "random")
                     {
                         // random terrain
-                        int indicator = rnd.Next(0, 10);
+                        int indicator = rnd.Next(0, 20);
                         if      (indicator == 0) terrain[y][x] = 4; // mountain
                         else if (indicator == 1) terrain[y][x] = 2; // sea
                         else
@@ -136,10 +122,26 @@ public static class MapGen
         {
             while (true)
             {
-                int x = rnd.Next(0, width);
-                int y = rnd.Next(0, height);
-
                 int team = (i < n_red) ? 0 : 1;
+
+                int x = 0;
+                int y = 0;
+                if (CORNER_BIAS)
+                {
+                    x = (int)(rnd.NextDouble() * rnd.NextDouble() * width);
+                    y = (int)(rnd.NextDouble() * rnd.NextDouble() * height);
+                    if (team == 1)
+                    {
+                        x = width - 1 - x;
+                        y = height - 1 - y;
+                    }
+                }
+                else
+                {
+                    x = rnd.Next(0, width);
+                    y = rnd.Next(0, height);
+                }
+
                 int hp   = 10;
                 int isExhausted = 0;
                 if (team == 0 && exhaustedRed > 0)
@@ -346,7 +348,7 @@ public static class MapGen
         if (local_search_flag)
         {
             DateTime startTime = DateTime.Now;
-            mapStr = LocalSearch(mapStr, null);
+            // mapStr = LocalSearch(mapStr, null);
             double secs = (DateTime.Now - startTime).TotalSeconds;
             Console.WriteLine($"Local search took {secs} seconds");
         }
@@ -383,104 +385,104 @@ public static class MapGen
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Local search logic referencing GameCLI.run_autobattle
-    /// </summary>
-    private static string LocalSearch(string mapStr, int? prev_winner)
-    {
-        // In Python: states, result = GameCLI.run_autobattle(...)
-        var (states, result) = GameCLI.run_autobattle(user1: player1,
-                                                     user2: player2,
-                                                     map: "random_map",
-                                                     games: 2,
-                                                     raw_map_str: mapStr);
+    // /// <summary>
+    // /// Local search logic referencing GameCLI.run_autobattle
+    // /// </summary>
+    // private static string LocalSearch(string mapStr, int? prev_winner)
+    // {
+    //     // In Python: states, result = GameCLI.run_autobattle(...)
+    //     var (states, result) = GameCLI.run_autobattle(user1: player1,
+    //                                                  user2: player2,
+    //                                                  map: "random_map",
+    //                                                  games: 2,
+    //                                                  raw_map_str: mapStr);
 
-        // If result==0 => no winner (draw), just return
-        if (result == 0) return mapStr;
+    //     // If result==0 => no winner (draw), just return
+    //     if (result == 0) return mapStr;
 
-        // If we haven't got a prev_winner or if it's the same winner, we try to degrade a random winner-unit
-        if (!prev_winner.HasValue || result == prev_winner.Value)
-        {
-            // Extract all UNIT lines from mapStr
-            var lines = mapStr.Split(new char[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
-            List<int[]> units = new List<int[]>();
-            // We'll parse them as [x, y, typeIndexString, team, hp, isExhausted]
-            // but store them as int[] with typeIndexString in a separate string for reassembling
-            List<string> typeStrings = new List<string>();
+    //     // If we haven't got a prev_winner or if it's the same winner, we try to degrade a random winner-unit
+    //     if (!prev_winner.HasValue || result == prev_winner.Value)
+    //     {
+    //         // Extract all UNIT lines from mapStr
+    //         var lines = mapStr.Split(new char[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
+    //         List<int[]> units = new List<int[]>();
+    //         // We'll parse them as [x, y, typeIndexString, team, hp, isExhausted]
+    //         // but store them as int[] with typeIndexString in a separate string for reassembling
+    //         List<string> typeStrings = new List<string>();
 
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("UNIT["))
-                {
-                    // e.g. UNIT[x,y,typeName,team,hp,isExhausted];
-                    // remove "UNIT[" and "];"
-                    string content = line.Substring(5, line.Length - 7);
-                    // x,y,type,team,hp,ex
-                    var parts = content.Split(',');
-                    if (parts.Length == 6)
-                    {
-                        int px = Int32.Parse(parts[0]);
-                        int py = Int32.Parse(parts[1]);
-                        string pTypeStr = parts[2];
-                        int pTeam = Int32.Parse(parts[3]);
-                        int pHP   = Int32.Parse(parts[4]);
-                        int pEx   = Int32.Parse(parts[5]);
-                        units.Add(new int[] { px, py, pTeam, pHP, pEx });
-                        typeStrings.Add(pTypeStr);
-                    }
-                }
-            }
+    //         foreach (var line in lines)
+    //         {
+    //             if (line.StartsWith("UNIT["))
+    //             {
+    //                 // e.g. UNIT[x,y,typeName,team,hp,isExhausted];
+    //                 // remove "UNIT[" and "];"
+    //                 string content = line.Substring(5, line.Length - 7);
+    //                 // x,y,type,team,hp,ex
+    //                 var parts = content.Split(',');
+    //                 if (parts.Length == 6)
+    //                 {
+    //                     int px = Int32.Parse(parts[0]);
+    //                     int py = Int32.Parse(parts[1]);
+    //                     string pTypeStr = parts[2];
+    //                     int pTeam = Int32.Parse(parts[3]);
+    //                     int pHP   = Int32.Parse(parts[4]);
+    //                     int pEx   = Int32.Parse(parts[5]);
+    //                     units.Add(new int[] { px, py, pTeam, pHP, pEx });
+    //                     typeStrings.Add(pTypeStr);
+    //                 }
+    //             }
+    //         }
 
-            // find all “winner units” = those with the same team as result, hp>1
-            // result is 0 or 1, so winner = result
-            var winnerUnitsIndices = new List<int>();
-            for (int i = 0; i < units.Count; i++)
-            {
-                var u = units[i];
-                if (u[2] == result && u[3] > 1)
-                {
-                    winnerUnitsIndices.Add(i);
-                }
-            }
+    //         // find all “winner units” = those with the same team as result, hp>1
+    //         // result is 0 or 1, so winner = result
+    //         var winnerUnitsIndices = new List<int>();
+    //         for (int i = 0; i < units.Count; i++)
+    //         {
+    //             var u = units[i];
+    //             if (u[2] == result && u[3] > 1)
+    //             {
+    //                 winnerUnitsIndices.Add(i);
+    //             }
+    //         }
 
-            if (winnerUnitsIndices.Count > 0)
-            {
-                int idx = winnerUnitsIndices[new Random().Next(0, winnerUnitsIndices.Count)];
-                // degrade that unit by 1 hp
-                units[idx][3] = units[idx][3] - 1; // hp--
+    //         if (winnerUnitsIndices.Count > 0)
+    //         {
+    //             int idx = winnerUnitsIndices[new Random().Next(0, winnerUnitsIndices.Count)];
+    //             // degrade that unit by 1 hp
+    //             units[idx][3] = units[idx][3] - 1; // hp--
 
-                // Rebuild mapStr with updated hp
-                // We only modify the selected unit line
-                // More simply, we can rebuild the entire string
-                // but let's just do a naive approach:
+    //             // Rebuild mapStr with updated hp
+    //             // We only modify the selected unit line
+    //             // More simply, we can rebuild the entire string
+    //             // but let's just do a naive approach:
 
-                System.Text.StringBuilder newSb = new System.Text.StringBuilder();
-                foreach (var line in lines)
-                {
-                    if (!line.StartsWith("UNIT["))
-                    {
-                        newSb.AppendLine(line);
-                    }
-                }
-                // Now re-append all units with updated data
-                for (int i = 0; i < units.Count; i++)
-                {
-                    var u = units[i];
-                    // x,y,typeStr,team,hp,isEx
-                    newSb.Append($"UNIT[{u[0]},{u[1]},{typeStrings[i]},{u[2]},{u[3]},{u[4]}];\n");
-                }
-                mapStr = newSb.ToString();
-            }
+    //             System.Text.StringBuilder newSb = new System.Text.StringBuilder();
+    //             foreach (var line in lines)
+    //             {
+    //                 if (!line.StartsWith("UNIT["))
+    //                 {
+    //                     newSb.AppendLine(line);
+    //                 }
+    //             }
+    //             // Now re-append all units with updated data
+    //             for (int i = 0; i < units.Count; i++)
+    //             {
+    //                 var u = units[i];
+    //                 // x,y,typeStr,team,hp,isEx
+    //                 newSb.Append($"UNIT[{u[0]},{u[1]},{typeStrings[i]},{u[2]},{u[3]},{u[4]}];\n");
+    //             }
+    //             mapStr = newSb.ToString();
+    //         }
 
-            // Recursively call local_search
-            return LocalSearch(mapStr, result);
-        }
-        else
-        {
-            // The winner changed => we stop
-            return mapStr;
-        }
-    }
+    //         // Recursively call local_search
+    //         return LocalSearch(mapStr, result);
+    //     }
+    //     else
+    //     {
+    //         // The winner changed => we stop
+    //         return mapStr;
+    //     }
+    // }
 }
 
 

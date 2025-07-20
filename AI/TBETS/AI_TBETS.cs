@@ -16,15 +16,15 @@ namespace SimpleWars
         public static int PlayerColor { get; private set; }
         
         // Algorithm parameters
-        private const int NUM_INIT = 3;              // Number of initial randomized player nodes
-        private const int N_ITERS = 250;              // Number of exploration iterations
-        private const double PERCENT_EXPLORE = 0.9;   // Chance to explore existing nodes
-        private const double PERCENT_EXPLOIT = 0.1;   // Chance to exploit unexplored nodes
-        private const double MUTATION_RATE = 0.3;     // Chance to mutate instead of crossover
+        private const int NUM_INIT = 20;              // Number of initial randomized player nodes
+        private const int RHEA_INDIVIDUALS = 0;       // Number of RHEA individuals to seed the root with
+        private const long RHEA_BUDGET_FRACTION = 3; // Fraction of action budget to spend on RHEA seeding, e.g. 3 means 1/3 of budget
+        private const int N_ITERS = -1;              // Number of exploration iterations
+        private const double MUTATION_RATIO = 0.3;     // Chance to mutate instead of crossover
         private const double PERCENT_FULL_CROSSOVER = 0.0;     // Chance to mutate instead of crossover
         private const int STARTING_POP = 5;           // Number of children for unexplored nodes
         private const double ATK_BIAS = .8;          // Bias towards attack actions in random generation
-        private const long LIMIT_TIME = 9700;         // Time limit for decision making in milliseconds
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;         // Time limit for decision making in milliseconds
 
         // Stopwatch for time management
         private readonly Stopwatch stopwatch = new Stopwatch();
@@ -64,9 +64,6 @@ namespace SimpleWars
         {
             return "NUM_INIT = " + NUM_INIT + 
                    ", N_ITERS = " + N_ITERS + 
-                   ", PERCENT_EXPLORE = " + PERCENT_EXPLORE + 
-                   ", PERCENT_EXPLOIT = " + PERCENT_EXPLOIT +
-                   ", MUTATION_RATE = " + MUTATION_RATE +
                    ", STARTING_POP = " + STARTING_POP +
                    ", ATK_BIAS = " + ATK_BIAS;
         }
@@ -81,6 +78,11 @@ namespace SimpleWars
         /// <returns>The chosen action to perform</returns>
         public Action makeAction(Map map, int teamColor, bool turnStart, bool gameStart)
         {
+            if (gameStart)
+            {
+                WarmUp(map.createDeepClone(), teamColor);
+                savedTree = null;
+            }
             stopwatch.Start();
 
             // Console.WriteLine(map.toString());
@@ -96,6 +98,7 @@ namespace SimpleWars
             {
                 return Action.createTurnEndAction();
             }
+            long actionBudget = timeLeft / movableUnitsCount;
             
             // Set the static PlayerColor for node checks
             PlayerColor = teamColor;
@@ -105,7 +108,8 @@ namespace SimpleWars
             
             // Begin with an empty root enemy node
             TBETSNode root = null;
-            
+
+
             bool newRoot = true;
             // If a tree exists
             if (savedTree != null)
@@ -160,7 +164,7 @@ namespace SimpleWars
                                         // throw new Exception("AI_TBETS: Expected root to be unexplored if it has only 1 child.");
                                     }
                                     else {
-                                        Exploit(root);
+                                        SeedRoot(root, actionBudget);
                                     }
                                 }
                                 break;
@@ -180,7 +184,7 @@ namespace SimpleWars
                 root.State = map.createDeepClone();
 
                 FitnessUpdate(root);                
-                Exploit(root);
+                SeedRoot(root, actionBudget);
             }
             else {
                 string_root = root.StringRecursive();
@@ -203,12 +207,21 @@ namespace SimpleWars
             }
             string debug = "";
             // Main exploration loop
-            for (int i = 0; i < N_ITERS; i++)
+
+            int n_iters = N_ITERS;
+            if (N_ITERS < 0) {
+                n_iters = int.MaxValue;
+            }
+
+            int completedIters = 0;
+            for (int i = 0; i < n_iters; i++)
             {
+                completedIters = i;
                 // Check for time limit
                 if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
                 {
                     Logger.addLogMessage("TBETS: Time limit reached after " + i + " iters\r\n", teamColor);
+                    break;
                     // throw new TimeoutException("TBETS: Time limit reached after " + i + " iters");
                 }
 
@@ -216,38 +229,43 @@ namespace SimpleWars
                 TBETSNode selectedNode = treeManager.SelectNode(root, i, N_ITERS);
 
                 // EXPANSION
-                if (selectedNode.IsLeaf) {
+                if (selectedNode.IsLeaf)
+                {
                     debug += "TBETS: Selected node is leaf.\n";
                     Logger.addLogMessage("TBETS: Selected node is leaf.\r\n", teamColor);
                     continue;
                 }
-                if (!selectedNode.Explored) {
+                if (!selectedNode.Explored)
+                {
                     // EXPLOIT
                     debug += "TBETS: Selected node is EXPLOITABLE. depth=" + selectedNode.Depth + "\n";
                     Exploit(selectedNode);
                 }
-                else {
+                else
+                {
                     // CROSSOVER/MUTATION
                     debug += "TBETS: Selected node is being EXPLORED. depth=" + selectedNode.Depth + "\n";
-                    if (rnd.NextDouble() < MUTATION_RATE || selectedNode.Children.Count == 1)
+                    if (rnd.NextDouble() < MUTATION_RATIO || selectedNode.Children.Count == 1)
                     {
                         // MUTATION: Pick 1 well performing node and mutate it
                         TBETSNode highFitnessNode = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
                         if (highFitnessNode != null)
                         {
                             TBETSNode mutatedNode = treeManager.MutateNode(highFitnessNode);
-                            
+
                             // Add the mutated node to the tree
                             AddNode(selectedNode, mutatedNode);
                         }
                     }
                     else
                     {
-                        if (rnd.NextDouble() < PERCENT_FULL_CROSSOVER) {
+                        if (rnd.NextDouble() < PERCENT_FULL_CROSSOVER)
+                        {
                             // FULL CROSSOVER: perform a crossover across all nodes
                             TBETSNode offspring = treeManager.FullCrossover(selectedNode);
                         }
-                        else {
+                        else
+                        {
                             // CROSSOVER: Pick 2 high fitness nodes and create a new node with genetic crossover
                             TBETSNode parent1 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
                             TBETSNode parent2 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS, parent1);
@@ -277,9 +295,11 @@ namespace SimpleWars
                     }
                     Console.WriteLine("Original root:");
                     // Console.WriteLine(string_root);
-                    // Console.WriteLine(root.State.toString());
-                    throw new ArgumentException("AI_TBETS: No explored nodes found in the list to select from.\n" +
-                        "["+debug+"]" + root.PrintChildren() + "\n" + root.StringRecursive() + "\n" + string_root + "\n" + root.State.toString());
+                    Console.WriteLine(root.State.toString());
+                    Console.WriteLine("Completed iters: " + completedIters);
+                    Console.WriteLine(root.nDescendents + " descendents");
+                    throw new ArgumentException($"AI_TBETS: No explored nodes found in the list to select from.\n" +
+                        "[" + debug + "]" + root.PrintChildren() + "\n" + root.StringRecursive() + "\n" + string_root + "\n" + root.State.toString());
                 }
             }
 
@@ -304,21 +324,116 @@ namespace SimpleWars
             
             // Prune branches that don't start with this action
             savedTree = treeManager.PruneTreeByFirstAction(root, bestNode, firstAction);
-            
+
+            // Check if legal move (should never be illegal)
+            if (!ActionChecker.isTheActionLegalMove_Silent(firstAction, map))
+            {
+                Console.WriteLine(map.toString());
+                Console.WriteLine($"AI-TBETS: Action {firstAction.ToString()} is illegal in the current state.");
+                // generate a valid move (move in place)
+                List<Unit> movableUnits = new List<Unit>(map.getUnitsList(teamColor, false, true, false));
+                firstAction = Action.createMoveOnlyAction(movableUnits[0], movableUnits[0].getXpos(), movableUnits[0].getYpos());
+            }
             stopwatch.Stop();
             Logger.addLogMessage("TBETS: Time used: " + stopwatch.ElapsedMilliseconds + "ms\r\n", teamColor);
             timeLeft -= stopwatch.ElapsedMilliseconds;
             stopwatch.Reset();
 
             // Console.WriteLine("TBETS: Chosen action: " + (firstAction != null ? firstAction.ToString() : "TURN END"));
-            
+
             return firstAction;
         }
 
-        private void Exploit(TBETSNode selectedNode) {
+        private void WarmUp(Map map, int teamColor)
+        {
+            // This method is designed to be called once at the start of a game.
+            // Its purpose is to execute a lightweight version of the main logic
+            // to ensure that critical methods are JIT-compiled before the
+            // first time-sensitive call to makeAction.
+
+            Stopwatch warmupWatch = new Stopwatch();
+            warmupWatch.Start();
+
+            PlayerColor = teamColor;
+            int enemyColor = (teamColor == 0) ? 1 : 0;
+
+            TBETSNode root = new TBETSNode(enemyColor, 0, null);
+            root.State = map;
+            
+            treeManager.ClearUnexploitedNodes();
+            FitnessUpdate(root);
+            Exploit(root, STARTING_POP);
+
+            // Run a few iterations to warm up the selection/expansion logic
+            for (int i = 0; i < 2; i++)
+            {
+                if (treeManager.unexploitedNodes.Count == 0) break;
+                TBETSNode selectedNode = treeManager.SelectNode(root, i, 10);
+                if (selectedNode == null || selectedNode.IsLeaf) continue;
+                if (!selectedNode.Explored) {
+                    Exploit(selectedNode);
+                }
+            }
+            
+            // Clean up after warmup
+            treeManager.ClearUnexploitedNodes();
+            savedTree = null;
+            
+            warmupWatch.Stop();
+            Logger.addLogMessage("TBETS: Warm-up finished in " + warmupWatch.ElapsedMilliseconds + "ms.\r\n", teamColor);
+        }
+
+        private void SeedRoot(TBETSNode root, long actionBudget)
+        {
+
+            Exploit(root, NUM_INIT);
+
+            if (RHEA_INDIVIDUALS < 1)
+            {
+                return;
+            }
+
+            // run RHEA for a few iters.
+            AI_RHEA rhea_agent = new AI_RHEA();
+            // spend a third of the budget running RHEA to seed the root
+            AI_RHEA.Individual[] RHEA_pop = rhea_agent.RunRHEA(root.State.createDeepClone(), PlayerColor, actionBudget / RHEA_BUDGET_FRACTION);
+            Array.Sort(RHEA_pop, (a, b) => b.fitness.CompareTo(a.fitness));
+
+            for (int i = 0; i < Math.Min(RHEA_INDIVIDUALS, RHEA_pop.Length); i++)
+            {
+                AI_RHEA.Individual individual = RHEA_pop[i];
+                List<Action> actions = individual.actionSequence[0];
+
+
+                int childColor = root.Color == 0 ? 1 : 0;
+                TBETSNode childNode = new TBETSNode(childColor, root.Depth + 1, root);
+                childNode.State = root.State.createDeepClone();
+
+                List<Action> clonedActions = new List<Action>();
+                foreach (Action act in actions)
+                {
+                    clonedActions.Add(act.createDeepClone());
+                }
+                // Generate random actions with attack bias
+                childNode.setActions(clonedActions);
+
+                // Apply actions to the state
+                childNode.ApplyActions();
+                childNode.EndTurn();
+
+                // Add the child node to the tree
+                AddNode(root, childNode);
+
+            }
+            root.Explored = true;
+            treeManager.RemoveExploitedNode(root);
+        }
+
+        private void Exploit(TBETSNode selectedNode, int numChildren = STARTING_POP)
+        {
             // First, ensure the node has a phantom child if it doesn't already have one
             TBETSNode phantomChild = null;
-            
+
             // Look for existing phantom child
             foreach (TBETSNode child in selectedNode.Children)
             {
@@ -329,16 +444,18 @@ namespace SimpleWars
                 }
             }
 
-            if (!selectedNode.IsPrimary) {
+            if (!selectedNode.IsPrimary)
+            {
                 throw new Exception("AI_TBETS: Expected selectedNode to be a primary node.");
             }
 
-            if (selectedNode.Explored) {
+            if (selectedNode.Explored)
+            {
                 selectedNode.PrintSelf();
                 selectedNode.GetRoot().PrintRecursive();
                 throw new Exception("AI_TBETS: Expected selectedNode to be unexplored.");
             }
-            
+
             if (phantomChild == null)
             {
                 throw new Exception("AI_TBETS: Expected phantom child to exist but none was found.");
@@ -349,17 +466,17 @@ namespace SimpleWars
 
             // List<TBETSNode> childrenToAdd = new List<TBETSNode>();
 
-            // Generate the rest of the STARTING_POP randomly initialized children
-            for (int j = 0; j < STARTING_POP-1; j++)
+            // Generate the rest of the randomly initialized children
+            for (int j = 0; j < numChildren - 1; j++)
             {
                 // Create new child node
                 int childColor = selectedNode.Color == 0 ? 1 : 0;
                 TBETSNode childNode = new TBETSNode(childColor, selectedNode.Depth + 1, selectedNode);
                 childNode.State = selectedNode.State.createDeepClone();
-                
+
                 // Generate random actions with attack bias
                 childNode.setActions(treeManager.GenerateRandomActions(childNode));
-                
+
                 // Apply actions to the state
                 childNode.ApplyActions();
                 childNode.EndTurn();
@@ -368,20 +485,21 @@ namespace SimpleWars
                 AddNode(selectedNode, childNode);
                 // childrenToAdd.Add(childNode);
             }
-        
+
             // // Update the node's fitness to be the lowest fitness among the children
             // if (selectedNode.Children.Count > 0)
             // {
             //     double lowestFitness = treeManager.GetLowestFitness(selectedNode.Children);
             //     treeManager.UpdateNodeFitness(selectedNode, lowestFitness);
             // }
-            
+
             // Mark as explored
             selectedNode.Explored = true;
             treeManager.RemoveExploitedNode(selectedNode);
 
             // exploit should generate multiple children
-            if (selectedNode.Children.Count == 1) {
+            if (selectedNode.Children.Count == 1)
+            {
                 // foreach (TBETSNode child in childrenToAdd) {
                 //     child.PrintSelf();
                 // }
@@ -416,11 +534,12 @@ namespace SimpleWars
             
             // Add the node as a child regardless of whether it's a duplicate
             parent.AddChild(node);
-            
+
             // Only calculate fitness and add to unexploited nodes if it's a primary node
             if (node.IsPrimary)
             {
                 FitnessUpdate(node);
+                parent.incDescendents(); // counts as an actual descendent in the tree
             }
 
             if (node.Actions.Count == 0)

@@ -160,11 +160,11 @@ namespace SimpleWars {
             fSgfManager.setPlayerName(fPlayers[0].getName(), fPlayers[1].getName());// Playerの名前を保存しておく
             fDrawManager.reDrawMap(fMap);
 
-			if (fForm.getPlayer(Consts.RED_TEAM) == PlayerList.NETWORK_PLAYER || fForm.getPlayer(Consts.BLUE_TEAM) == PlayerList.NETWORK_PLAYER) {
-				executeNetGame_Client();
-			} else {
-				executeGame();
-			}
+			// if (fForm.getPlayer(Consts.RED_TEAM) == PlayerList.NETWORK_PLAYER || fForm.getPlayer(Consts.BLUE_TEAM) == PlayerList.NETWORK_PLAYER) {
+			// 	executeNetGame_Client();
+			// } else {
+			executeGame();
+			// }
         }
         
         // 自動高速対戦を可能にする関数
@@ -214,17 +214,21 @@ namespace SimpleWars {
         }
 
         // ゲームを実行する
-        public void executeGame() {
+        public void executeGame()
+        {
 
             //自動対戦モードの場合
-            if (fAutoBattleFlag) {
+            if (fAutoBattleFlag)
+            {
                 //指定の対戦回数までゲーム実行
-                while (battleCntOfNow < AutoBattleSettings.NumberOfGamesPerMap) {
+                while (battleCntOfNow < AutoBattleSettings.NumberOfGamesPerMap)
+                {
                     inquireAI(fPlayers[fPhase], fPhase);//１ターン内の行動を決定させる
 
                     changePhase();//ターンを変更する version 0.104 より場所を修正．
 
-                    if (isAllUnitDead() == true||fMap.getTurnCount() == fMap.getTurnLimit()||fResignationFlag>=0) {
+                    if (isAllUnitDead() == true || fMap.getTurnCount() == fMap.getTurnLimit() || fResignationFlag >= 0)
+                    {
                         gameEndPhase();
                         //対戦ログを保存
                         // Logger.saveCombatLog(fAutoBattleCombatLogFileName, winTeam, fResignationFlag, fMap.getTurnCount(), attackCnt_0to5_Red, attackCnt_0to5_Blue, attackCnt_6to11_Red, attackCnt_6to11_Blue,
@@ -236,7 +240,8 @@ namespace SimpleWars {
                     }
 
                     // 指定の回数の対戦実験が行われている場合
-                    if (battleCntOfNow == AutoBattleSettings.NumberOfGamesPerMap/2) { // CHANGED THIS: NOW IT DOES NOT RUN GAMES FOR THE AIS SWITCHED
+                    if (battleCntOfNow == AutoBattleSettings.NumberOfGamesPerMap / 2)
+                    { // CHANGED THIS: NOW IT DOES NOT RUN GAMES FOR THE AIS SWITCHED
                         // if (fMap.reverse) {
                         //     Logger.showAutoBattleResult(fAutoBattleResultFileName, fMapFileName,
                         //         fPlayers[0].getName(), fPlayers[1].getName(), AutoBattleSettings.NumberOfGamesPerMap, 
@@ -256,15 +261,21 @@ namespace SimpleWars {
                         break;
                     }
                 }
-            } else {//HumanPlayer対AI または　AI対AIの通常対戦モードのケース
-                while (true) {
-                    if (fForm.getPlayer(fPhase) == PlayerList.HUMAN_PLAYER) {
+            }
+            else
+            {//HumanPlayer対AI または　AI対AIの通常対戦モードのケース
+                while (true)
+                {
+                    if (fForm.getPlayer(fPhase) == PlayerList.HUMAN_PLAYER)
+                    {
                         inquirePlayer(fPhase);//人間プレイヤーの行動の決定を待つ
                         if (fGameEndFlag) return;
                         Logger.showDialogMessage("プレイヤーのターン終了");
                         //ターンを変更する
                         changePhase();
-                    } else {//AIプレイヤーのターンのとき
+                    }
+                    else
+                    {//AIプレイヤーのターンのとき
                         inquireAI(fPlayers[fPhase], fPhase);//１ターン内の行動を決定させる
                         if (fGameEndFlag) return;
                         //ターンを変更する
@@ -272,12 +283,26 @@ namespace SimpleWars {
                     }
 
                     //全滅，投了，ターンオーバーを判定して終了
-                    if (isAllUnitDead() || fResignationFlag>=0 || fMap.getTurnCount() == fMap.getTurnLimit()) {
+                    if (isAllUnitDead() || fResignationFlag >= 0 || fMap.getTurnCount() == fMap.getTurnLimit())
+                    {
                         gameEndPhase();
                         break;
                     }
                 }
             }
+
+            // if (winCntOfBlue[0] == 1)
+            // {
+            //     return -1;
+            // }
+            // else if (winCntOfRed[0] == 1)
+            // {
+            //     return 1;
+            // }
+            // else
+            // {
+            //     return 0;
+            // }
         }
 
 		#region ■■通信対戦関係■■

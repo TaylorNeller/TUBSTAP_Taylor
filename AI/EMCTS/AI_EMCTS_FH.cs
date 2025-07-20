@@ -36,10 +36,10 @@ namespace SimpleWars
             $"UCB_C          = {UCB_C:0.###}";
 
         // Hard CPU budget identical to the baseline AIs
-        private const long   LIMIT_TIME     = 9_700;  // ms per *real* game turn
+        private const long   LIMIT_TIME     = AI_Consts.LIMIT_TIME;  // ms per *real* game turn
         private const int    HORIZON_TURNS  = 2;      // our turn + opponent turn
         private const int    PHASE_COUNT    = 30;     // bridge‑burning phases
-        private const int    MAX_CHILDREN   = 120;    // ≤ 5× typical branching factor
+        private const int    MAX_CHILDREN   = 100;    // ≤ 5× typical branching factor
         private const double UCB_C          = 0.15;   // UCB exploration constant
 
         /* ==================================================================
@@ -83,7 +83,7 @@ namespace SimpleWars
             /* ---- 1 / 3  Book‑keeping ------------------------------------- */
             if (turnStart)
             {
-                timeLeft     = LIMIT_TIME / 40; // ≈ 1⁄40 of full time slice per atomic action
+                timeLeft     = LIMIT_TIME;
                 cachedGenome = null;
             }
 

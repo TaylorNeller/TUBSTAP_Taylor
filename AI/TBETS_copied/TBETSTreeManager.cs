@@ -141,6 +141,11 @@ namespace SimpleWars
         {
             return nodeSelector.SelectExploredNode(root, iter, n_iters);
         }
+
+        public TBETSNode SelectNode(TBETSNode root, int iter, int n_iters)
+        {
+            return nodeSelector.SelectNode(root, iter, n_iters);
+        }
         
         /// <summary>
         /// Select an unexplored node from the unexploited nodes list,
@@ -307,6 +312,120 @@ namespace SimpleWars
             mutated.CalculateStateHash();
             
             return mutated;
+        }
+
+        public TBETSNode FullCrossover(TBETSNode node) {
+            // setup intial state
+            TBETSNode offspring = new TBETSNode(1 - node.Color, node.Depth + 1, node);
+            offspring.State = node.State.createDeepClone();
+
+            // Sanity check - each of node's children must have the same TakenActions
+            TBETSNode child1 = node.Children[0];
+            foreach (TBETSNode child in node.Children)
+            {
+                if (!child.HasSameTakenActions(child1) && child != child1)
+                {
+                    throw new ArgumentException("Crossover2: Children do not have the same TakenActions.");  
+                }
+            }
+
+            // apply takenactions
+            foreach (Action action in child1.TakenActions)
+            {
+                if (action == null) {
+                    throw new ArgumentNullException("Crossover2: Action in child1 is null.");
+                }
+                offspring.AddTakenAction(action.createDeepClone());
+            }
+            offspring.ApplyActions(); // apply any TakenActions
+
+            // create dict of unit id : <dict of actions : <list of fitness, count>>
+            Dictionary<int, Dictionary<Action, List<double>>> unitActionMap = new Dictionary<int, Dictionary<Action, List<double>>>();
+            // dict of actions : best node
+            Dictionary<Action, TBETSNode> actionBestNodeMap = new Dictionary<Action, TBETSNode>();
+            // catalogue fitness of actions
+            foreach (TBETSNode child in node.Children)
+            {
+                foreach (Action action in child.Actions)
+                {
+                    if (action == null) {
+                        throw new ArgumentNullException("Crossover2: Action in child is null.");
+                    }
+                    int unitId = action.operationUnitId;
+                    if (!unitActionMap.ContainsKey(unitId))
+                    {
+                        unitActionMap[unitId] = new Dictionary<Action, List<double>>();
+                    }
+                    Dictionary<Action, List<double>> actionMap = unitActionMap[unitId];
+                    if (!actionMap.ContainsKey(action))
+                    {
+                        actionMap[action] = new List<double> { child.Fitness, 1 };
+                        actionBestNodeMap[action] = child;
+                    }
+                    else {
+                        if (actionBestNodeMap[action].Fitness < child.Fitness)
+                        {
+                            actionBestNodeMap[action] = child;
+                        }
+                        List<double> score_count = actionMap[action];
+                        score_count[0] += child.Fitness;
+                        score_count[1] += 1;
+                    }
+                }
+            }
+
+            Dictionary<int, List<Action>> sortedActionsByUnit = new Dictionary<int, List<Action>>();
+
+            foreach (var unitEntry in unitActionMap)
+            {
+                int unitId = unitEntry.Key;
+                Dictionary<Action, List<double>> actionScores = unitEntry.Value;
+
+                List<Action> sortedActions = actionScores
+                    .OrderByDescending(entry => entry.Value[0] / entry.Value[1])  // Sort by average score
+                    .Select(entry => entry.Key)
+                    .ToList();
+
+                sortedActionsByUnit[unitId] = sortedActions;
+            }
+            
+            // Generate a new action based on the best actions for each unit
+            List<Unit> units = new List<Unit>(offspring.State.getUnitsList(offspring.Color, false, true, false));
+            while (units.Count > 0) {
+                // Get a random unit from the offspring's state
+                int randomIndex = rnd.Next(units.Count);
+                Unit unit = units[randomIndex];
+
+                Action selectedAction = null;
+                // Get the list of actions for this unit
+                if (sortedActionsByUnit.ContainsKey(unit.getID()))
+                {
+                    List<Action> actions = sortedActionsByUnit[unit.getID()];
+                    for (int i = 0; i < actions.Count; i++)
+                    {
+                        // Check if the action is legal
+                        if (ActionChecker.isTheActionLegalMove_Silent(actions[i], offspring.State))
+                        {
+                            // If legal, add it to the offspring
+                            selectedAction = actions[i].createDeepClone();
+                            break;
+                        }
+                    }
+                }
+                if (selectedAction == null)
+                {
+                    // If no legal action found, generate a random one
+                    // TODO: consider logging this
+                    selectedAction = actionGenerator.GenerateBiasedAction(unit, offspring.State);
+                }
+                offspring.AddAction(selectedAction);
+                offspring.State.executeAction(selectedAction);
+                units.RemoveAt(randomIndex);
+            }
+
+            offspring.EndTurn();
+            offspring.CalculateStateHash();
+            return offspring;
         }
         
         /// <summary>

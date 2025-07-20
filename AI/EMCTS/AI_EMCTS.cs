@@ -49,7 +49,7 @@ namespace SimpleWars
          * ░░  Search parameters – tweak to taste
          * ---------------------------------------------------------------- */
         // hard CPU budget identical to the other AIs
-        private const long LIMIT_TIME = 9_700;           // ms per turn
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;           // ms per turn
         private const int PHASE_COUNT = 30;               // bridge‑burning phases
         private const double UCB_C = 0.15;                // exploration constant
 
@@ -109,7 +109,7 @@ namespace SimpleWars
             if (turnStart)
             {
                 // reset per‑turn state
-                timeLeft = LIMIT_TIME/40;
+                timeLeft = LIMIT_TIME;
                 cachedGenome = null;
             }
 

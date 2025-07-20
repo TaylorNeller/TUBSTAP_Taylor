@@ -43,6 +43,82 @@ namespace SimpleWars
             return false;
         }
         
+        public TBETSNode SelectNode(TBETSNode root, int iter, int n_iters) {
+            TBETSNode current = root;
+            while (current.Children.Count > 1)
+            {
+                // Chance of exploring this node more
+                // if (rnd.NextDouble() < 0.5) {
+                //     break;
+                // }
+                // prev (best): .5 exploreProb - linear iteration scaling
+                // current: .4 exploreProb + linear children annealing - linear iter scaling
+                double exploreProb = 0.5;
+                // exploreProb = exploreProb + exploreProb * (1.0/(double)Math.Pow(current.Children.Count,1)); // prioritizes nodes with less children
+                if (rnd.NextDouble() < exploreProb - exploreProb * (double)iter / (double)n_iters){ // scaling based on iteration
+                    break;
+                }
+                // if (rnd.NextDouble() < exploreProb) {
+                //     break;
+                // }
+
+                // scaling based on number of children
+                // if (rnd.NextDouble() < exploreProb - exploreProb * Math.Min((double)current.Children.Count / 200, .8))
+                // {
+                //     break;
+                // }
+
+                // Select a child node
+                int childIndex = UCB_Explore(current);
+                current = current.Children[childIndex];
+            }
+            return current;
+        }
+
+        private int UCB_Explore(TBETSNode node) {
+            double C = 1.414; // Exploration parameter (sqrt(2) is common)
+            double bestScore = double.MinValue;
+            int bestIndex = 0;
+                        
+            // Calculate a UCB score for each candidate node
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                TBETSNode child = node.Children[i];
+                if (!child.IsPrimary)
+                {
+                    continue; // Skip duplicate nodes
+                }
+
+                double parentVisits = node.nDescendents;
+                double childVisits = child.nDescendents;
+                
+                // If node hasn't been visited, return it immediately
+                if (child.nDescendents == 0) {
+                    if (child.IsLeaf) {
+                        childVisits = 1;
+                    }
+                    else {
+                        node.GetRoot().PrintRecursive();
+                        throw new Exception("TBETSNodeSelector: child of explored node exists with no child.");
+                    }
+                }
+
+                // Calculate UCB score
+                double exploitationTerm = child.Fitness;
+                double explorationTerm = C * Math.Sqrt(Math.Log(parentVisits) / childVisits);
+                double ucbScore = exploitationTerm + explorationTerm;
+                
+                // Track the best score
+                if (ucbScore > bestScore)
+                {
+                    bestScore = ucbScore;
+                    bestIndex = i;
+                }
+            }
+            
+            return bestIndex;
+        }
+
         /// <summary>
         /// Select an explored node, biasing towards nodes closer to the root and nodes with higher fitness.
         /// </summary>
@@ -73,20 +149,22 @@ namespace SimpleWars
             // int index = (int)(rnd.NextDouble() * rnd.NextDouble() * candidates.Count);
             // Use UCB to select a an index
             // TODO
-            int index = UCB(candidates, iter, n_iters);
+            double totalVisits = candidates[0].GetRoot().nDescendents; // Current iteration count as total visits
+            int index = UCB(candidates, totalVisits, iter, n_iters);
 
             return candidates[index];
         }
 
-        private int UCB(List<TBETSNode> candidates, int iter, int n_iters)
+        // private int 
+
+        private int UCB(List<TBETSNode> candidates, double totalVisits, int iter_n, int n_iters)
         {
             double C = 1.414; // Exploration parameter (sqrt(2) is common)
-            double depthBias =  .4; // Bias towards nodes closer to the root
+            // double depthBias =  .4; // Bias towards nodes closer to the root
+            double depthBias = .6 * (1 - Math.Pow((double)iter_n / (double)n_iters, 2)); // Annealing schedule for depth bias, bias towards earlier iterations
             double bestScore = double.MinValue;
             int bestIndex = 0;
-            
-            double totalVisits = iter; // Current iteration count as total visits
-            
+                        
             // Calculate a UCB score for each candidate node
             for (int i = 0; i < candidates.Count; i++)
             {
@@ -178,13 +256,17 @@ namespace SimpleWars
             }
             
             // Tournament selection
-            // int index = tournamentSelection(candidates);
+            int index = tournamentSelection(candidates);
 
             // UCB
-            int index = UCB(candidates, iter, n_iters);
+            // double totalVisits = candidates[0].GetRoot().nDescendents; // Current iteration count as total visits
+            // int index = UCB(candidates, totalVisits);
 
             // E-Greedy
             // int index = eGreedy(candidates, turn, nTurns, alpha);
+
+            // // highest
+            // int index = 0;
             
             return candidates[index];
         }

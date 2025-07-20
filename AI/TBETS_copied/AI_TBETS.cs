@@ -17,13 +17,14 @@ namespace SimpleWars
         
         // Algorithm parameters
         private const int NUM_INIT = 3;              // Number of initial randomized player nodes
-        private const int N_ITERS = 250;              // Number of exploration iterations
+        private const int N_ITERS = 1000;              // Number of exploration iterations
         private const double PERCENT_EXPLORE = 0.9;   // Chance to explore existing nodes
         private const double PERCENT_EXPLOIT = 0.1;   // Chance to exploit unexplored nodes
         private const double MUTATION_RATE = 0.3;     // Chance to mutate instead of crossover
+        private const double PERCENT_FULL_CROSSOVER = 0.0;     // Chance to mutate instead of crossover
         private const int STARTING_POP = 5;           // Number of children for unexplored nodes
-        private const double ATK_BIAS = 0.8;          // Bias towards attack actions in random generation
-        private const long LIMIT_TIME = 9700;         // Time limit for decision making in milliseconds
+        private const double ATK_BIAS = .8;          // Bias towards attack actions in random generation
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;         // Time limit for decision making in milliseconds
 
         // Stopwatch for time management
         private readonly Stopwatch stopwatch = new Stopwatch();
@@ -34,7 +35,7 @@ namespace SimpleWars
         
         // Tree management components
         private readonly TBETSTreeManager treeManager;
-        
+         
         // Saved tree from previous function calls
         private TBETSNode savedTree = null;
         
@@ -80,6 +81,10 @@ namespace SimpleWars
         /// <returns>The chosen action to perform</returns>
         public Action makeAction(Map map, int teamColor, bool turnStart, bool gameStart)
         {
+            if (gameStart)
+            {
+                WarmUp(map.createDeepClone(), teamColor);
+            }
             stopwatch.Start();
 
             // Console.WriteLine(map.toString());
@@ -200,103 +205,101 @@ namespace SimpleWars
                     Logger.addLogMessage("TBETS: Loaded root with no available nodes to exploit.\r\n", teamColor);
                 }
             }
-
-            string exploit_string = "";
-            TBETSNode last_exploited = null;
+            string debug = "";
             // Main exploration loop
+            int completedIters = 0;
             for (int i = 0; i < N_ITERS; i++)
             {
+                completedIters = i;
                 // Check for time limit
                 if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
                 {
                     Logger.addLogMessage("TBETS: Time limit reached after " + i + " iters\r\n", teamColor);
                     break;
+                    // throw new TimeoutException("TBETS: Time limit reached after " + i + " iters");
                 }
-                // bool exploreChosen = treeManager.ChooseExploreOrExploit();
-                // bool exploreChosen = rnd.NextDouble() < PERCENT_EXPLORE;
-                bool exploreChosen = rnd.NextDouble() < (PERCENT_EXPLORE-PERCENT_EXPLORE*((double)i / (double)N_ITERS)); // Decrease exploration chance as iterations progress to favor exploitation
-                // Decide whether to explore or exploit
-                if (exploreChosen && treeManager.HasExploredNodes(root))
+
+                // SELECTION
+                TBETSNode selectedNode = treeManager.SelectNode(root, i, N_ITERS);
+
+                // EXPANSION
+                if (selectedNode.IsLeaf)
                 {
-                    // Explore: Pick any explored node, biasing towards nodes closer to the root and higher fitness
-                    TBETSNode selectedNode = treeManager.SelectExploredNode(root, i, N_ITERS);
-                    
-                    // Create a new node with genetic operations
+                    debug += "TBETS: Selected node is leaf.\n";
+                    Logger.addLogMessage("TBETS: Selected node is leaf.\r\n", teamColor);
+                    continue;
+                }
+                if (!selectedNode.Explored)
+                {
+                    // EXPLOIT
+                    debug += "TBETS: Selected node is EXPLOITABLE. depth=" + selectedNode.Depth + "\n";
+                    Exploit(selectedNode);
+                }
+                else
+                {
+                    // CROSSOVER/MUTATION
+                    debug += "TBETS: Selected node is being EXPLORED. depth=" + selectedNode.Depth + "\n";
                     if (rnd.NextDouble() < MUTATION_RATE || selectedNode.Children.Count == 1)
                     {
-                        // Mutation: Pick 1 well performing node and mutate it
+                        // MUTATION: Pick 1 well performing node and mutate it
                         TBETSNode highFitnessNode = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
                         if (highFitnessNode != null)
                         {
                             TBETSNode mutatedNode = treeManager.MutateNode(highFitnessNode);
-                            
+
                             // Add the mutated node to the tree
                             AddNode(selectedNode, mutatedNode);
                         }
                     }
                     else
                     {
-                        // Crossover: Pick 2 high fitness nodes and create a new node with genetic crossover
-                        TBETSNode parent1 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
-                        TBETSNode parent2 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS, parent1);
-                        TBETSNode offspring = treeManager.CrossoverNodes(parent1, parent2);
-                        AddNode(selectedNode, offspring);
-                    }
-                }
-                else {
-                    if (treeManager.HasUnexploredNodes()) // Exploit
-                    {
-                        // Exploit: Pick any unexplored node from the global list, biasing towards high fitness nodes
-                        TBETSNode selectedNode = treeManager.SelectUnexploredNode();
-                        exploit_string += $"Exploit selected node: {selectedNode}\r\n";
-                        last_exploited = selectedNode; // Keep track of the last exploited node for logging
-                        
-                        Exploit(selectedNode);
-                    }
-                    else {
-                        // root.PrintRecursive();
-                        // Console.WriteLine(root.State.toString());
-                        // int[,] map2 = root.State.getFieldTypeArray();
-                        // // print map
-                        // for (int y = 0; y < map2.GetLength(1); y++)
-                        // {
-                        //     for (int x = 0; x < map2.GetLength(0); x++)
-                        //     {
-                        //         Console.Write(map2[x, y] + " ");
-                        //     }
-                        //     Console.WriteLine();
-                        // }
-                        // throw new ArgumentException("AI_TBETS: No unexplored nodes available for exploitation. Full tree explored? unlikely.");
-                        Logger.addLogMessage("TBETS: No unexplored nodes available for exploitation.\r\n", teamColor);
+                        if (rnd.NextDouble() < PERCENT_FULL_CROSSOVER)
+                        {
+                            // FULL CROSSOVER: perform a crossover across all nodes
+                            TBETSNode offspring = treeManager.FullCrossover(selectedNode);
+                        }
+                        else
+                        {
+                            // CROSSOVER: Pick 2 high fitness nodes and create a new node with genetic crossover
+                            TBETSNode parent1 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS);
+                            TBETSNode parent2 = treeManager.SelectHighFitnessChild(selectedNode, PlayerColor, i, N_ITERS, parent1);
+                            TBETSNode offspring = treeManager.CrossoverNodes(parent1, parent2);
+                            AddNode(selectedNode, offspring);
+                        }
                     }
                 }
             }
-            
+            // Console.WriteLine("TBETS: Iterations completed: " + N_ITERS);
             // Find the best action sequence from the root's children
             TBETSNode bestNode = treeManager.GetBestPlayerNode(root);
+            bool oneMoveFlag = false;
             if (bestNode == null) {
-                root.PrintChildren();
-                root.PrintRecursive();
-                foreach (TBETSNode node in root.Children) {
-                    if (treeManager.CanBeExploited(node)) {
-                        Console.WriteLine($"Node {node} can be exploited.");
-                    }
+                if (root.Children.Count == 1) { // it's possible there is only one legal move (e.g. trapped artillary), in which case all iterations will be spent "exploring" the root node
+                    bestNode = root.Children[0];
+                    oneMoveFlag = true;
+                    Console.WriteLine("TBETS: Root has only 1 child. (only 1 legal move?).");
                 }
-                Console.WriteLine("Exploitations: " + exploit_string);
-                Console.WriteLine("Original root:");
-                Console.WriteLine(string_root);
-                last_exploited.PrintSelf();
-                last_exploited.Parent.PrintSelf();
-                last_exploited.Parent.Parent.PrintSelf();
-                last_exploited.GetRoot().PrintRecursive();
-                throw new ArgumentException("AI_TBETS: No explored nodes found in the list to select from.");
+                else {  //something has gone wrong
+                    // root.PrintChildren();
+                    // root.PrintRecursive();
+                    foreach (TBETSNode node in root.Children) {
+                        if (treeManager.CanBeExploited(node)) {
+                            Console.WriteLine($"Node {node} can be exploited.");
+                        }
+                    }
+                    Console.WriteLine("Original root:");
+                    // Console.WriteLine(string_root);
+                    // Console.WriteLine(root.State.toString());
+                    throw new ArgumentException($"AI_TBETS: No explored nodes found in the list to select from. Ran {completedIters} iters.\n" +
+                        "["+debug+"]" + root.PrintChildren() + "\n" + root.StringRecursive() + "\n" + string_root + "\n" + root.State.toString());
+                }
             }
 
             // debugging print
             // root.PrintRecursive();
             // throw new Exception("AI_TBETS: Debugging print - root tree printed.");
 
-            if (bestNode.Explored == false)
+            if (!bestNode.Explored && !oneMoveFlag)
             {
                 Console.WriteLine("TBETS: Best node is unexplored. This should not happen.");
             }
@@ -322,6 +325,45 @@ namespace SimpleWars
             // Console.WriteLine("TBETS: Chosen action: " + (firstAction != null ? firstAction.ToString() : "TURN END"));
             
             return firstAction;
+        }
+
+        private void WarmUp(Map map, int teamColor)
+        {
+            // This method is designed to be called once at the start of a game.
+            // Its purpose is to execute a lightweight version of the main logic
+            // to ensure that critical methods are JIT-compiled before the
+            // first time-sensitive call to makeAction.
+
+            Stopwatch warmupWatch = new Stopwatch();
+            warmupWatch.Start();
+
+            PlayerColor = teamColor;
+            int enemyColor = (teamColor == 0) ? 1 : 0;
+
+            TBETSNode root = new TBETSNode(enemyColor, 0, null);
+            root.State = map;
+            
+            treeManager.ClearUnexploitedNodes();
+            FitnessUpdate(root);
+            Exploit(root);
+
+            // Run a few iterations to warm up the selection/expansion logic
+            for (int i = 0; i < 2; i++)
+            {
+                if (treeManager.unexploitedNodes.Count == 0) break;
+                TBETSNode selectedNode = treeManager.SelectNode(root, i, 10);
+                if (selectedNode == null || selectedNode.IsLeaf) continue;
+                if (!selectedNode.Explored) {
+                    Exploit(selectedNode);
+                }
+            }
+            
+            // Clean up after warmup
+            treeManager.ClearUnexploitedNodes();
+            savedTree = null;
+            
+            warmupWatch.Stop();
+            Logger.addLogMessage("TBETS: Warm-up finished in " + warmupWatch.ElapsedMilliseconds + "ms.\r\n", teamColor);
         }
 
         private void Exploit(TBETSNode selectedNode) {

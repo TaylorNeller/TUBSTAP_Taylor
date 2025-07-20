@@ -56,9 +56,11 @@
     <Compile Include="Action.cs" />
     <Compile Include="ActionChecker.cs" />
     <Compile Include="AI\AiTools.cs" />
+    <Compile Include="AI\AI_Consts.cs" />
     <Compile Include="AI\EMCTS\AI_EMCTS.cs" />
     <Compile Include="AI\EMCTS\AI_EMCTS_FH.cs" />
     <Compile Include="AI\M3Lee\M3_Node.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_PW.cs" />
     <Compile Include="AI\M_UCT\AI_RHCP.cs" />
     <Compile Include="AI\M_UCT\AI_RHEA.cs" />
     <Compile Include="AI\M_UCT\M_Tools.cs" />
@@ -72,6 +74,9 @@
     <Compile Include="AI\Sato\AI_SatAutoLose.cs" />
     <Compile Include="AI\Sato\AI_SatD2.cs" />
     <Compile Include="AI\Sato\AI_SatD2FULLORDER.cs" />
+    <Compile Include="AI\Sato\AI_SatJointer.cs" />
+    <Compile Include="AI\Sato\AI_SatJointer2.cs" />
+    <Compile Include="AI\Sato\AI_SatTS_D2.cs" />
     <Compile Include="AI\Sato\SatQuickCompo\SatQuickAction.cs" />
     <Compile Include="AI\Sato\SatQuickCompo\SatQuickMap.cs" />
     <Compile Include="AI\Sato\SatQuickCompo\SatQuickMap_Aux.cs" />

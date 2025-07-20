@@ -14,7 +14,7 @@ namespace SimpleWars
     class AI_M_UCT : Player
     {
         // パラメータ
-        private const int MAX_SIM = 200;       // 1行動あたりのシミュレーション回数    2016/1/26までは5000回を使用
+        private const int MAX_SIM = -1;       // 1行動あたりのシミュレーション回数    2016/1/26までは5000回を使用
         private const int SIM_SIKI = 10;        // 木探索での子ノードを展開する閾値 3, 5, 10, 20あたり？
         private const double UCB_CONST = 0.15;  // UCB値の特性を定める定数
         //private const float Threshold = 0.5f;
@@ -30,7 +30,7 @@ namespace SimpleWars
         //ストップウォッチ関連
         private Stopwatch stopwatch = new Stopwatch();
         private static long timeLeft;           // 残り時間
-        private const long LIMIT_TIME = 9700;   // 1ターンにかける時間(ミリ秒)     2016/1/26までは9500回を使用
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;   // 1ターンにかける時間(ミリ秒)     2016/1/26までは9500回を使用
 
         #region 表示名、パラメータ情報
         // AIの表示名を返す（必須）
@@ -72,7 +72,13 @@ namespace SimpleWars
 
             totalsim = 0;
 
-            for (int i = 0; i < MAX_SIM; i++)
+            int n_iters = MAX_SIM;
+            if (MAX_SIM < 0)
+            {
+                n_iters = int.MaxValue;
+            }
+
+            for (int i = 0; i < n_iters; i++)
             {
                 if (stopwatch.ElapsedMilliseconds > (timeLeft / movablenum))
                 {

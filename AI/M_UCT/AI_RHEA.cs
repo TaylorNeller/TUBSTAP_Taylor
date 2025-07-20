@@ -22,11 +22,11 @@ namespace SimpleWars
         // private const double ATTACK_BIAS = 0.8;       
         private const int HORIZON = 2;               
         private const int POPULATION_SIZE = 30;       
-        private const int NUM_GENERATIONS = 20;        
-        private const double MUTATION_RATE = 0.4;     
+        private const int NUM_GENERATIONS = -1;        
+        private const double MUTATION_RATE = 0.4;     // controls mutation rate per action within action sequences
         private const double CROSSOVER_RATE = 0.8;    
         private const int TOURNAMENT_SIZE = 3;         
-        private const long LIMIT_TIME = 9700;          
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;          
         private const int ELITISM_COUNT = 3;          
         private const double ATTACK_BIAS = 0.8;     
 
@@ -41,7 +41,7 @@ namespace SimpleWars
         private List<Action>[] previousBestSequence = null;
         
         // Class to represent an individual in the population
-        private class Individual
+        public class Individual
         {
             public List<Action>[] actionSequence; // Array of action lists, one per step in the horizon
             public double fitness;
@@ -99,30 +99,9 @@ namespace SimpleWars
                 // Reset previous best sequence at the start of a new turn
                 previousBestSequence = null;
             }
-            
             int movableUnitsCount = map.getUnitsList(teamColor, false, true, false).Count;
-            
-            // Initialize population
-            Individual[] population = InitializePopulation(map, teamColor);
-            
-            // Evaluate initial population
-            EvaluatePopulation(population, map, teamColor);
-            
-            // Evolve population for a number of generations or until time runs out
-            for (int generation = 0; generation < NUM_GENERATIONS; generation++)
-            {
-                if (stopwatch.ElapsedMilliseconds > (timeLeft / movableUnitsCount))
-                {
-                    Logger.addLogMessage("RHEA: Time limit reached after " + generation + " generations\r\n", teamColor);
-                    break;
-                }
-                
-                // Create new population through selection, crossover, and mutation
-                population = EvolvePopulation(population, map, teamColor);
-                
-                // Evaluate new population
-                EvaluatePopulation(population, map, teamColor);
-            }
+
+            Individual[] population = RunRHEA(map, teamColor, timeLeft/movableUnitsCount);
             
             // Find the best individual
             Individual bestIndividual = GetBestIndividual(population);
@@ -132,6 +111,16 @@ namespace SimpleWars
             
             // Get the best action from the best individual
             Action bestAction = GetBestAction(bestIndividual, map, teamColor);
+
+            // Check if legal move (should never be illegal)
+            if (!ActionChecker.isTheActionLegalMove_Silent(bestAction, map))
+            {
+                Console.WriteLine(map.toString());
+                Console.WriteLine($"AI-RHEA: Action {bestAction.ToString()} is illegal in the current state.");
+                // generate a valid move (move in place)
+                List<Unit> movableUnits = new List<Unit>(map.getUnitsList(teamColor, false, true, false));
+                bestAction = Action.createMoveOnlyAction(movableUnits[0], movableUnits[0].getXpos(), movableUnits[0].getYpos());
+            }
             
             stopwatch.Stop();
             Logger.addLogMessage("RHEA: Time used: " + stopwatch.ElapsedMilliseconds + "ms\r\n", teamColor);
@@ -142,16 +131,52 @@ namespace SimpleWars
             
             return bestAction;
         }
+
+        public Individual[] RunRHEA(Map map, int teamColor, long timeLimit)
+        {
+            Stopwatch subloopWatch = new Stopwatch();
+            subloopWatch.Start();
+
+            // Initialize population
+            Individual[] population = InitializePopulation(map, teamColor);
+
+            // Evaluate initial population
+            EvaluatePopulation(population, map, teamColor);
+
+            int n_iters = NUM_GENERATIONS;
+            if (NUM_GENERATIONS < 0)
+            {
+                n_iters = int.MaxValue;
+            }
+
+            // Evolve population for a number of generations or until time runs out
+            for (int generation = 0; generation < n_iters; generation++)
+            {
+                if (subloopWatch.ElapsedMilliseconds > timeLimit)
+                {
+                    Logger.addLogMessage("RHEA: Time limit reached after " + generation + " generations\r\n", teamColor);
+                    break;
+                }
+
+                // Create new population through selection, crossover, and mutation
+                population = EvolvePopulation(population, map, teamColor);
+
+                // Evaluate new population
+                EvaluatePopulation(population, map, teamColor);
+            }
+            subloopWatch.Stop();
+            return population;
+        }
         
         // Initialize the population with random individuals or using the shift buffer
         private Individual[] InitializePopulation(Map map, int teamColor)
         {
             Individual[] population = new Individual[POPULATION_SIZE];
-            
+
             for (int i = 0; i < POPULATION_SIZE; i++)
             {
                 population[i] = new Individual(HORIZON);
-                
+
                 // If we have a previous best sequence, use shift buffer for the first individual
                 if (i == 0 && previousBestSequence != null)
                 {
@@ -163,7 +188,7 @@ namespace SimpleWars
                             population[i].actionSequence[h].Add(action.createDeepClone());
                         }
                     }
-                    
+
                     // Generate random actions for the last step
                     population[i].actionSequence[HORIZON - 1] = GenerateRandomActions(map, teamColor);
                 }
@@ -176,7 +201,7 @@ namespace SimpleWars
                     }
                 }
             }
-            
+
             return population;
         }
         
@@ -362,7 +387,7 @@ namespace SimpleWars
             }
             
             // Evaluate the final state
-            return EvaluateState(simMap, teamColor);
+            return AI_RHEA.EvaluateState(simMap, teamColor);
         }
         
         // Simulate the enemy's turn with a simple heuristic
@@ -519,7 +544,7 @@ namespace SimpleWars
         }
         
         // Evaluate the state of the game
-        private double EvaluateState(Map simMap, int teamColor)
+        public static double EvaluateState(Map simMap, int teamColor)
         {
             int enemyColor = (teamColor == 0) ? 1 : 0;
             

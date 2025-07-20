@@ -17,7 +17,7 @@ namespace SimpleWars
         private const double MUTATION_RATE = 0.4;     
         private const double CROSSOVER_RATE = 0.8;    
         private const int TOURNAMENT_SIZE = 3;         
-        private const long LIMIT_TIME = 9700;          
+        private const long LIMIT_TIME = AI_Consts.LIMIT_TIME;          
         private const int ELITISM_COUNT = 3;          
         private const double ATTACK_BIAS = 0.8;     
 

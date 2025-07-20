@@ -52,9 +52,6 @@ namespace SimpleWars
             PrimaryNode = null;
             IsLeaf = false;
             Successor = null;
-            if (parent != null) {
-                parent.incDescendents();
-            }
         }
         
         /// <summary>

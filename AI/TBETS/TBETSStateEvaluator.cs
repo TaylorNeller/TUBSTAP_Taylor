@@ -68,7 +68,7 @@ namespace SimpleWars
                     break;
                 }
             }
-            
+
             // If no phantom child exists, create one
             if (phantomChild == null)
             {
@@ -76,11 +76,12 @@ namespace SimpleWars
                 phantomChild = new TBETSNode(1 - node.Color, node.Depth + 1, node);
                 phantomChild.IsPhantom = true; // Mark as phantom
                 phantomChild.State = node.State.createDeepClone();
-                
+
                 SimulateTurn(phantomChild);
-                
+
                 // Add phantom child to parent node
                 node.AddChild(phantomChild);
+                node.incDescendents();
             }
 
             node.Successor = phantomChild;
@@ -103,7 +104,7 @@ namespace SimpleWars
                     break;
                 }
             }
-            
+
             // If no phantom grandchild exists, create one
             if (phantomGrandchild == null)
             {
@@ -111,11 +112,12 @@ namespace SimpleWars
                 phantomGrandchild = new TBETSNode(1 - phantomChild.Color, phantomChild.Depth + 1, phantomChild);
                 phantomGrandchild.IsPhantom = true; // Mark as phantom
                 phantomGrandchild.State = phantomChild.State.createDeepClone();
-                
+
                 SimulateTurn(phantomGrandchild);
-                
+
                 // Add phantom grandchild to phantom child
                 phantomChild.AddChild(phantomGrandchild);
+                phantomChild.incDescendents();
             }
 
             // Evaluate the state of the phantom grandchild
@@ -304,61 +306,7 @@ namespace SimpleWars
         /// <returns>A fitness value between 0.0 and 1.0</returns>
         public double EvaluateState(Map simMap, int teamColor)
         {
-            int enemyColor = (teamColor == 0) ? 1 : 0;
-            
-            List<Unit> myUnits = simMap.getUnitsList(teamColor, true, true, false);
-            List<Unit> enemyUnits = simMap.getUnitsList(enemyColor, true, true, false);
-            
-            // If we have no units left, return the worst possible score
-            if (myUnits.Count == 0)
-            {
-                return 0.0;
-            }
-            
-            // If the enemy has no units left, return the best possible score
-            if (enemyUnits.Count == 0)
-            {
-                return 1.0;
-            }
-            
-            // Calculate total value for both sides
-            double myValue = 0.0;
-            double enemyValue = 0.0;
-            
-            foreach (Unit unit in myUnits)
-            {
-                string unitName = unit.getName().ToLower();
-                if (UnitValues.TryGetValue(unitName, out double value))
-                {
-                    myValue += value * unit.getHP();
-                }
-                else
-                {
-                    myValue += unit.getHP(); // Default to HP if unit type not in dictionary
-                }
-            }
-            
-            foreach (Unit unit in enemyUnits)
-            {
-                string unitName = unit.getName().ToLower();
-                if (UnitValues.TryGetValue(unitName, out double value))
-                {
-                    enemyValue += value * unit.getHP();
-                }
-                else
-                {
-                    enemyValue += unit.getHP(); // Default to HP if unit type not in dictionary
-                }
-            }
-            
-            // Calculate value ratio
-            double valueRatio = myValue / (myValue + enemyValue);
-            
-            // Add a small bonus for having more units
-            double unitRatio = (double)myUnits.Count / (myUnits.Count + enemyUnits.Count);
-            
-            // Combine the two ratios with weights
-            return 0.7 * valueRatio + 0.3 * unitRatio;
+            return AI_RHEA.EvaluateState(simMap, teamColor);
         }
     }
 }

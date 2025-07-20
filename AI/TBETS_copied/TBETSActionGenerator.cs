@@ -348,7 +348,7 @@ namespace SimpleWars
             }
             
             // First try to generate attack actions (with higher probability)
-            if (rnd.NextDouble() < 0.7) // Higher bias towards attacks
+            if (rnd.NextDouble() < attackBias) // Higher bias towards attacks
             {
                 List<Action> attackActions = RangeController.getAttackActionList(unit, state);
                 List<Action> validAttacks = new List<Action>();
