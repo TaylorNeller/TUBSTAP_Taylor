@@ -37,7 +37,7 @@ namespace SimpleWars
 
         // Hard CPU budget identical to the baseline AIs
         private const long   LIMIT_TIME     = AI_Consts.LIMIT_TIME;  // ms per *real* game turn
-        private const int    HORIZON_TURNS  = 2;      // our turn + opponent turn
+        private const int    HORIZON_TURNS  = 2;      // each horizon increment is current turn + opponent turn
         private const int    PHASE_COUNT    = 30;     // bridge‑burning phases
         private const int    MAX_CHILDREN   = 100;    // ≤ 5× typical branching factor
         private const double UCB_C          = 0.15;   // UCB exploration constant
@@ -362,6 +362,6 @@ namespace SimpleWars
             return null;
         }
 
-        private static double EvaluateState(Map map, int teamColor) => AI_M_UCT.evaluateStateValue(map, teamColor);
+        private static double EvaluateState(Map map, int teamColor) => AI_RHEA.EvaluateState(map, teamColor);
     }
 }

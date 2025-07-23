@@ -81,7 +81,7 @@ public static class MapGen
                         else if (indicator == 1) terrain[y][x] = 2; // sea
                         else
                         {
-                            // plains/forest/hill distribution
+                            // plains/forest/road distribution
                             int n = 1 + (rnd.Next(0, 3) * 2); 
                             if (n == 6) n = 5; // convert index 6 to 5 if needed
                             terrain[y][x] = n; 

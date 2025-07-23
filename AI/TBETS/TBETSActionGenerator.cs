@@ -344,6 +344,7 @@ namespace SimpleWars
         {
             if (unit == null || state == null)
             {
+                Console.WriteLine("TBETSActionGenerator: Unit or state is null in GenerateBiasedAction.");
                 return null;
             }
             

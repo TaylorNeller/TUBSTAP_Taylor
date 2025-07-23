@@ -398,7 +398,7 @@ namespace SimpleWars
         /// <summary>Static evaluation wrapper so we can swap easily.</summary>
         private static double EvaluateState(Map map, int teamColor)
         {
-            return AI_M_UCT.evaluateStateValue(map, teamColor);
+            return AI_RHEA.EvaluateState(map, teamColor);
         }
     }
 }

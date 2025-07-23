@@ -290,103 +290,121 @@ namespace SimpleWars
             
             return candidates[index];
         }
-
-    public int tournamentSelection(List<TBETSNode> candidates)
-    {
-        int tournamentSize = Math.Max(3, candidates.Count/2);
-        int index = candidates.Count+1;
-        TBETSNode best = null;
-        
-        for (int i = 0; i < tournamentSize; i++)
+        public int tournamentSelection(List<TBETSNode> candidates)
         {
-            int randomIndex = rnd.Next(candidates.Count);
-            TBETSNode candidate = candidates[randomIndex];
-            // if (randomIndex < index || (rnd.NextDouble() < 0.7 && best != null && best.Depth < candidate.Depth))
-            if (randomIndex < index)
+            int tournamentSize = 3;
+            int index = candidates.Count + 1;
+            TBETSNode best = null;
+
+            for (int i = 0; i < tournamentSize; i++)
             {
-                index = randomIndex;
-                best = candidate;
+                int randomIndex = rnd.Next(candidates.Count/5);
+                TBETSNode candidate = candidates[randomIndex];
+                // if (randomIndex < index || (rnd.NextDouble() < 0.7 && best != null && best.Depth < candidate.Depth))
+                if (randomIndex < index)
+                {
+                    index = randomIndex;
+                    best = candidate;
+                }
+            }
+            return index;
+        }
+        // public int tournamentSelection(List<TBETSNode> candidates)
+        // {
+        //     int tournamentSize = Math.Max(3, candidates.Count/2);
+        //     int index = candidates.Count+1;
+        //     TBETSNode best = null;
+            
+        //     for (int i = 0; i < tournamentSize; i++)
+        //     {
+        //         int randomIndex = rnd.Next(candidates.Count);
+        //         TBETSNode candidate = candidates[randomIndex];
+        //         // if (randomIndex < index || (rnd.NextDouble() < 0.7 && best != null && best.Depth < candidate.Depth))
+        //         if (randomIndex < index)
+        //         {
+        //             index = randomIndex;
+        //             best = candidate;
+        //         }
+        //     }
+        //     return index;
+        // }
+
+        private double epsilon = .8;
+        public int eGreedy(List<TBETSNode> candidates, int currentTurn, int totalTurns, double alpha)
+        {
+            // Calculate the current epsilon using the annealing schedule
+            // As currentTurn approaches totalTurns, epsilon will approach 0
+            double currentEpsilon = epsilon * Math.Pow(1.0 - (double)currentTurn / totalTurns, alpha);
+            
+            // With probability (1-epsilon), exploit by choosing the best candidate (index 0)
+            // With probability epsilon, explore by choosing a random candidate
+            if (rnd.NextDouble() > currentEpsilon)
+            {
+                // Exploit: choose the best candidate (already sorted)
+                return 0;
+            }
+            else
+            {
+                // Explore: choose a random candidate
+                return rnd.Next(candidates.Count);
             }
         }
-        return index;
-    }
-
-    private double epsilon = .8;
-    public int eGreedy(List<TBETSNode> candidates, int currentTurn, int totalTurns, double alpha)
-    {
-        // Calculate the current epsilon using the annealing schedule
-        // As currentTurn approaches totalTurns, epsilon will approach 0
-        double currentEpsilon = epsilon * Math.Pow(1.0 - (double)currentTurn / totalTurns, alpha);
-        
-        // With probability (1-epsilon), exploit by choosing the best candidate (index 0)
-        // With probability epsilon, explore by choosing a random candidate
-        if (rnd.NextDouble() > currentEpsilon)
+            
+        /// <summary>
+        /// Get the best player node from a list (node with highest fitness).
+        /// Prioritizes primary nodes over duplicates when fitness is equal.
+        /// Used for selecting next move, so does not return an unexplored node
+        /// </summary>
+        /// <param name="nodes">List of nodes</param>
+        /// <returns>Node with highest fitness</returns>
+        public TBETSNode GetBestPlayerNode(TBETSNode root)
         {
-            // Exploit: choose the best candidate (already sorted)
-            return 0;
-        }
-        else
-        {
-            // Explore: choose a random candidate
-            return rnd.Next(candidates.Count);
-        }
-    }
-        
-    /// <summary>
-    /// Get the best player node from a list (node with highest fitness).
-    /// Prioritizes primary nodes over duplicates when fitness is equal.
-    /// Used for selecting next move, so does not return an unexplored node
-    /// </summary>
-    /// <param name="nodes">List of nodes</param>
-    /// <returns>Node with highest fitness</returns>
-    public TBETSNode GetBestPlayerNode(TBETSNode root)
-    {
-        List<TBETSNode> nodes = root.Children;
-        if (nodes == null || nodes.Count == 0)
-        {
-            throw new ArgumentException("TBETSNodeSelector: Cannot get best player node from an empty or null list of nodes.");
-        }
-        
-        TBETSNode bestNode = null;
-        
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            // If fitness is higher, or equal but this is a primary node and best is not
-            // only considers explored nodes
-            if (nodes[i].Explored && (bestNode == null || (nodes[i].Fitness > bestNode.Fitness || 
-                (nodes[i].Fitness == bestNode.Fitness && nodes[i].IsPrimary && !bestNode.IsPrimary))))
+            List<TBETSNode> nodes = root.Children;
+            if (nodes == null || nodes.Count == 0)
             {
-                bestNode = nodes[i];
+                throw new ArgumentException("TBETSNodeSelector: Cannot get best player node from an empty or null list of nodes.");
             }
-        }
-
-        if (bestNode == null)
-        {
-            // pick best fitness unexplored node
+            
+            TBETSNode bestNode = null;
+            
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (bestNode == null || (nodes[i].Fitness >= bestNode.Fitness))
+                // If fitness is higher, or equal but this is a primary node and best is not
+                // only considers explored nodes
+                if (nodes[i].Explored && (bestNode == null || (nodes[i].Fitness > bestNode.Fitness || 
+                    (nodes[i].Fitness == bestNode.Fitness && nodes[i].IsPrimary && !bestNode.IsPrimary))))
                 {
                     bestNode = nodes[i];
                 }
             }
-            Console.WriteLine("TBETSNodeSelector: No explored nodes found when selecting best player node. Selecting best unexplored node instead.");
 
-            if (bestNode == null) {
-                return null;
+            if (bestNode == null)
+            {
+                // pick best fitness unexplored node
+                for (int i = 0; i < nodes.Count; i++)
+                {
+                    if (bestNode == null || (nodes[i].Fitness >= bestNode.Fitness))
+                    {
+                        bestNode = nodes[i];
+                    }
+                }
+                Console.WriteLine("TBETSNodeSelector: No explored nodes found when selecting best player node. Selecting best unexplored node instead.");
+
+                if (bestNode == null) {
+                    return null;
+                }
             }
+            
+            // If the best node found is a duplicate, check if there's a primary node with the same fitness
+            if (!bestNode.IsPrimary)
+            {
+                root.PrintRecursive();
+                root.PrintChildren();
+                throw new Exception("TBETSNodeSelector: Best node should always be primary but a duplicate was found instead.");
+            }
+            
+            return bestNode;
         }
-        
-        // If the best node found is a duplicate, check if there's a primary node with the same fitness
-        if (!bestNode.IsPrimary)
-        {
-            root.PrintRecursive();
-            root.PrintChildren();
-            throw new Exception("TBETSNodeSelector: Best node should always be primary but a duplicate was found instead.");
-        }
-        
-        return bestNode;
-    }
         
         /// <summary>
         /// Get the lowest fitness among a list of nodes.

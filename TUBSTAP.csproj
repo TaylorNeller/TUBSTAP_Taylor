@@ -60,7 +60,13 @@
     <Compile Include="AI\EMCTS\AI_EMCTS.cs" />
     <Compile Include="AI\EMCTS\AI_EMCTS_FH.cs" />
     <Compile Include="AI\M3Lee\M3_Node.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_HR.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_HR_RR.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_HR_RR_TT.cs" />
     <Compile Include="AI\M_UCT\AI_M_UCT_PW.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_PW_RR.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_RR.cs" />
+    <Compile Include="AI\M_UCT\AI_M_UCT_TT.cs" />
     <Compile Include="AI\M_UCT\AI_RHCP.cs" />
     <Compile Include="AI\M_UCT\AI_RHEA.cs" />
     <Compile Include="AI\M_UCT\M_Tools.cs" />

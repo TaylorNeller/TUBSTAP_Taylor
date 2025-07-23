@@ -27,7 +27,7 @@ namespace SimpleWars {
 
         // AIの表示名（必須のpublic関数）
         public string getName() {
-            return "Sample_MaxActionEvalFunc";
+            return "Sample-MaxActionEvalFunc";
         }
 
         // パラメータ等の情報を返す関数

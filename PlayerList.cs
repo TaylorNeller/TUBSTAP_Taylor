@@ -20,6 +20,9 @@ namespace SimpleWars {
             new AI_TBETS(),
             new AI_EMCTS(),
             new AI_EMCTS_FH(),
+            new AI_M_UCT_RR(),
+            new AI_M_UCT_TT(),
+            new AI_M_UCT_PW_RR(),
             // new AI_SatTS_D2(),
             new AI_M_UCT_PW()
         };

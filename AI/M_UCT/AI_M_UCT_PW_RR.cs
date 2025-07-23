@@ -10,7 +10,7 @@ namespace SimpleWars
     /// <summary>
     /// 2016年度GAT杯優勝AI (Muto) — modified to use Progressive Widening (PW).
     /// </summary>
-    class AI_M_UCT_PW : Player
+    class AI_M_UCT_PW_RR : Player
     {
         // ------------------------------------------------------------------
         // Original Parameters
@@ -44,8 +44,10 @@ namespace SimpleWars
         // RNG (single static to avoid reseeding issues)
         private static readonly Random RNG = new Random();
 
+        private static M_GameTree_PW root; 
+
         #region 表示名、パラメータ情報
-        public string getName() { return "M-UCT-PW"; }
+        public string getName() { return "M-UCT-PW-RR"; }
         public string showParameters() { return ""; }
         #endregion
 
@@ -57,7 +59,14 @@ namespace SimpleWars
             stopwatch.Start();
 
             // build / refresh root
-            M_GameTree_PW root = makeroot(map, teamColor);
+            if (root == null || turnStart || !MapsAreEquivalent(root.board, map))
+            {
+                root = makeroot(map.createDeepClone(), teamColor);
+            }
+            else if (root.next.Count == 0)          // ← new: promoted leaf
+            {
+                development(root, teamColor);           // populate untried & do PW’s first child
+            }
 
             if (turnStart)
             {
@@ -85,6 +94,26 @@ namespace SimpleWars
                 totalsim++;
             }
 
+            // Console.WriteLine("Total simulations: " + totalsim);
+
+
+            int rtnID = 0;
+            double maxrate = 0;
+
+            for (int i = 0; i < root.next.Count; i++)
+            {
+                M_GameTree_PW rtnnode = root.next[i];
+                double tmprate = root.next[i].housyuu;
+                if (tmprate > maxrate)
+                {
+                    maxrate = tmprate;
+                    rtnID = i;
+                }
+            }
+
+
+
+            // デバッグする時はここで探索木の様子をログ表示したりする
             stopwatch.Stop();
             Logger.addLogMessage("sim_time: " + stopwatch.ElapsedMilliseconds + "\r\n", teamColor);
             Logger.log("depth: " + max_depth + "\r\n", teamColor);
@@ -93,7 +122,10 @@ namespace SimpleWars
             timeLeft -= stopwatch.ElapsedMilliseconds;
             stopwatch.Reset();
 
-            return maxRateAction(root);
+            // return root.next[rtnID].act; // this doesnt give error
+
+            root = root.next[rtnID];
+            return root.act;
         }
 
         // ------------------------------------------------------------------
@@ -190,23 +222,6 @@ namespace SimpleWars
             n.housyuu = n.totalscore / n.simnum;
         }
 
-        // ------------------------------------------------------------------
-        // Select max-mean child action from root
-        // ------------------------------------------------------------------
-        public static Action maxRateAction(M_GameTree_PW root)
-        {
-            int rtnID = 0; double maxrate = double.NegativeInfinity;
-            for (int i = 0; i < root.next.Count; i++)
-            {
-                double tmprate = root.next[i].housyuu;
-                if (tmprate > maxrate)
-                {
-                    maxrate = tmprate;
-                    rtnID = i;
-                }
-            }
-            return root.next[rtnID].act;
-        }
 
         // ------------------------------------------------------------------
         // Random playout / rollout policy (unchanged)
@@ -270,6 +285,57 @@ namespace SimpleWars
                     break;
             }
             return simmap;
+        }
+
+        
+        private bool MapsAreEquivalent(Map map1, Map map2)
+        {
+            if (map1 == null || map2 == null)
+            {
+                return false;
+            }
+            
+            // Compare unit lists
+            List<Unit> units1 = map1.getUnitsList(0, true, true, false);
+            units1.AddRange(map1.getUnitsList(1, true, true, false));
+            
+            List<Unit> units2 = map2.getUnitsList(0, true, true, false);
+            units2.AddRange(map2.getUnitsList(1, true, true, false));
+            
+            // Quick check - unit counts must match
+            if (units1.Count != units2.Count)
+            {
+                return false;
+            }
+            
+            // Sort units by ID for consistent comparison
+            units1 = units1.OrderBy(u => u.getID()).ToList();
+            units2 = units2.OrderBy(u => u.getID()).ToList();
+            
+            // Compare each unit
+            for (int i = 0; i < units1.Count; i++)
+            {
+                Unit unit1 = units1[i];
+                Unit unit2 = units2[i];
+                
+                if (unit1.getID() != unit2.getID() ||
+                    unit1.getXpos() != unit2.getXpos() ||
+                    unit1.getYpos() != unit2.getYpos() ||
+                    unit1.getHP() != unit2.getHP() ||
+                    unit1.getTeamColor() != unit2.getTeamColor() ||
+                    unit1.getName() != unit2.getName())
+                {
+                    return false;
+                }
+            }
+            
+            // Compare turn count
+            if (map1.getTurnCount() != map2.getTurnCount())
+            {
+                return false;
+            }
+            
+            return true;
         }
 
         // ------------------------------------------------------------------
@@ -389,21 +455,4 @@ namespace SimpleWars
         }
     }
 
-    // ======================================================================
-    // M_GameTree node object — extended for Progressive Widening
-    // ======================================================================
-    class M_GameTree_PW
-    {
-        public Map board;
-        public Action act;
-        public int depth;
-
-        public double housyuu;     // average return
-        public double totalscore;  // sum of returns
-        public int    simnum;      // visit count
-        public double lastscore;   // most recent rollout value
-
-        public List<M_GameTree_PW> next = new List<M_GameTree_PW>(); // expanded children
-        public List<Action>     untried = new List<Action>();  // PW action pool
-    }
 }

@@ -32,7 +32,9 @@ namespace SimpleWars
 
         // A random number generator (reused throughout the agent)
         private Random rnd = new Random();
-        
+
+        private TBETSActionGenerator actionGenerator;
+
         // Stopwatch for time management
         private Stopwatch stopwatch = new Stopwatch();
         private static long timeLeft;
@@ -87,12 +89,17 @@ namespace SimpleWars
                    ", MUTATION_RATE = " + MUTATION_RATE + 
                    ", CROSSOVER_RATE = " + CROSSOVER_RATE;
         }
+        
+        public AI_RHEA()
+        {
+            actionGenerator = new TBETSActionGenerator(rnd, ATTACK_BIAS);
+        }
 
         public Action makeAction(Map map, int teamColor, bool turnStart, bool gameStart)
         {
             // Console.WriteLine("RHEA: start");
             stopwatch.Start();
-            
+
             if (turnStart)
             {
                 timeLeft = LIMIT_TIME;
@@ -101,14 +108,14 @@ namespace SimpleWars
             }
             int movableUnitsCount = map.getUnitsList(teamColor, false, true, false).Count;
 
-            Individual[] population = RunRHEA(map, teamColor, timeLeft/movableUnitsCount);
-            
+            Individual[] population = RunRHEA(map, teamColor, timeLeft / movableUnitsCount);
+
             // Find the best individual
             Individual bestIndividual = GetBestIndividual(population);
-            
+
             // Store the best sequence for the next call (shift buffer)
             previousBestSequence = bestIndividual.actionSequence;
-            
+
             // Get the best action from the best individual
             Action bestAction = GetBestAction(bestIndividual, map, teamColor);
 
@@ -121,14 +128,14 @@ namespace SimpleWars
                 List<Unit> movableUnits = new List<Unit>(map.getUnitsList(teamColor, false, true, false));
                 bestAction = Action.createMoveOnlyAction(movableUnits[0], movableUnits[0].getXpos(), movableUnits[0].getYpos());
             }
-            
+
             stopwatch.Stop();
             Logger.addLogMessage("RHEA: Time used: " + stopwatch.ElapsedMilliseconds + "ms\r\n", teamColor);
             timeLeft -= stopwatch.ElapsedMilliseconds;
             stopwatch.Reset();
 
             // Console.WriteLine("RHEA: Best action: " + bestAction.toOneLineString());
-            
+
             return bestAction;
         }
 
@@ -644,7 +651,7 @@ namespace SimpleWars
                 
                 if (rnd.NextDouble() < CROSSOVER_RATE)
                 {
-                    offspring = Crossover(parent1, parent2);
+                    offspring = Crossover(parent1, parent2, teamColor, map);
                 }
                 else
                 {
@@ -679,46 +686,292 @@ namespace SimpleWars
             
             return best;
         }
-        
-        // Crossover: Combine two parents to create an offspring
-        private Individual Crossover(Individual parent1, Individual parent2)
-        {
-            Individual offspring = new Individual(HORIZON);
+
+        // private Individual Crossover(Individual parent1, Individual parent2)
+        // {
+        //     Individual offspring = new Individual(HORIZON);
             
-            // Uniform crossover: For each step, randomly choose actions from either parent
+        //     // Uniform crossover: For each step, randomly choose actions from either parent
+        //     for (int h = 0; h < HORIZON; h++)
+        //     {
+        //         if (rnd.NextDouble() < 0.5)
+        //         {
+        //             foreach (Action action in parent1.actionSequence[h])
+        //             {
+        //                 offspring.actionSequence[h].Add(action.createDeepClone());
+        //             }
+        //         }
+        //         else
+        //         {
+        //             foreach (Action action in parent2.actionSequence[h])
+        //             {
+        //                 offspring.actionSequence[h].Add(action.createDeepClone());
+        //             }
+        //         }
+        //     }
+            
+        //     return offspring;
+        // }
+
+        // Crossover: Combine two parents to create an offspring
+        private Individual Crossover(Individual parent1, Individual parent2, int teamColor, Map map)
+        {
+            // return Crossover(parent1, parent2);
+            Individual offspring = new Individual(HORIZON);
+            Map state = map.createDeepClone();
+
+            // for each action sequence in the horizon, perform crossover operation.
             for (int h = 0; h < HORIZON; h++)
             {
-                if (rnd.NextDouble() < 0.5)
+                List<Action> offspringActions = new List<Action>();
+
+                // Get all units for the team and create a map for quick lookup
+                List<Unit> units = state.getUnitsList(teamColor, false, true, false);
+                Dictionary<int, Unit> unitMap = new Dictionary<int, Unit>();
+                foreach (Unit unit in units)
                 {
-                    foreach (Action action in parent1.actionSequence[h])
+                    unitMap[unit.getID()] = unit;
+                }
+
+                // Create maps of unit IDs to actions from both parents
+                Dictionary<int, Action> parent1Actions = new Dictionary<int, Action>();
+                Dictionary<int, Action> parent2Actions = new Dictionary<int, Action>();
+
+                foreach (Action action in parent1.actionSequence[h])
+                {
+                    int unitId = action.operationUnitId;
+                    if (unitMap.ContainsKey(unitId))
                     {
-                        offspring.actionSequence[h].Add(action.createDeepClone());
+                        parent1Actions[unitId] = action.createDeepClone();
                     }
                 }
-                else
+
+                foreach (Action action in parent2.actionSequence[h])
                 {
-                    foreach (Action action in parent2.actionSequence[h])
+                    int unitId = action.operationUnitId;
+                    if (unitMap.ContainsKey(unitId))
                     {
-                        offspring.actionSequence[h].Add(action.createDeepClone());
+                        parent2Actions[unitId] = action.createDeepClone();
                     }
                 }
+
+                // Step 1: Determine which units' actions to keep from parent1 (approximately half)
+                HashSet<int> keepFromParent1 = new HashSet<int>();
+                List<int> unitsFromParent1 = new List<int>(parent1Actions.Keys);
+
+                // Shuffle the list to randomize which units to keep from parent1
+                for (int i = unitsFromParent1.Count - 1; i > 0; i--)
+                {
+                    int j = rnd.Next(i + 1);
+                    int temp = unitsFromParent1[i];
+                    unitsFromParent1[i] = unitsFromParent1[j];
+                    unitsFromParent1[j] = temp;
+                }
+
+                // Select approximately half of the units from parent1
+                int halfCount = (int)Math.Ceiling(unitsFromParent1.Count / 2.0);
+                for (int i = 0; i < halfCount; i++)
+                {
+                    if (i < unitsFromParent1.Count)
+                    {
+                        keepFromParent1.Add(unitsFromParent1[i]);
+                    }
+                }
+
+                // Step 2: Create a sequence of actions preserving ordering from both parents
+                List<Action> combinedActions = new List<Action>();
+
+                // Units to process from parent2 (in parent2's order)
+                List<int> unitsToProcessFromParent2 = new List<int>();
+
+                // Get the order of units from parent2
+                List<int> parent2UnitOrder = new List<int>();
+                foreach (Action action in parent2.actionSequence[h])
+                {
+                    int unitId = action.operationUnitId;
+                    if (!parent2UnitOrder.Contains(unitId) && unitMap.ContainsKey(unitId) && !keepFromParent1.Contains(unitId))
+                    {
+                        parent2UnitOrder.Add(unitId);
+                    }
+                }
+
+                // Get the order of units from parent1 that we're keeping
+                List<int> parent1UnitOrder = new List<int>();
+                foreach (Action action in parent1.actionSequence[h])
+                {
+                    int unitId = action.operationUnitId;
+                    if (!parent1UnitOrder.Contains(unitId) && unitMap.ContainsKey(unitId) && keepFromParent1.Contains(unitId))
+                    {
+                        parent1UnitOrder.Add(unitId);
+                    }
+                }
+
+                // Combine actions from both parents, preserving their ordering
+                List<int> combinedUnitOrder = new List<int>();
+
+                // First add all units from parent2 that we're not keeping from parent1
+                foreach (int unitId in parent2UnitOrder)
+                {
+                    if (unitMap.ContainsKey(unitId) && !keepFromParent1.Contains(unitId))
+                    {
+                        combinedUnitOrder.Add(unitId);
+                    }
+                }
+
+                // Now integrate the units we're keeping from parent1 at their relative positions
+                foreach (int unitId in parent1UnitOrder)
+                {
+                    // Find the position of this unit in parent1's list
+                    int position = -1;
+                    for (int i = 0; i < parent1.actionSequence[h].Count; i++)
+                    {
+                        if (parent1.actionSequence[h][i].operationUnitId == unitId)
+                        {
+                            position = i;
+                            break;
+                        }
+                    }
+
+                    // Calculate relative position in the combined list
+                    int insertPosition = (int)((position / (double)parent1.actionSequence[h].Count) * combinedUnitOrder.Count);
+                    insertPosition = Math.Min(insertPosition, combinedUnitOrder.Count);
+
+                    // Insert at the calculated position
+                    combinedUnitOrder.Insert(insertPosition, unitId);
+
+                }
+
+                // Step 3: Execute actions in the combined order, checking legality
+                foreach (int unitId in combinedUnitOrder)
+                {
+                    Unit unit = unitMap[unitId];
+                    Action selectedAction = null;
+
+                    // Get action from appropriate parent
+                    if (keepFromParent1.Contains(unitId) && parent1Actions.ContainsKey(unitId))
+                    {
+                        selectedAction = parent1Actions[unitId].createDeepClone();
+                    }
+                    else if (parent2Actions.ContainsKey(unitId))
+                    {
+                        selectedAction = parent2Actions[unitId].createDeepClone();
+                    }
+
+                    // Check legality and apply action
+                    if (ActionChecker.isTheActionLegalMove_Silent(selectedAction, state))
+                    {
+                        offspringActions.Add(selectedAction);
+                        state.executeAction(selectedAction);
+                    }
+                    else
+                    {
+                        // Step 4: If illegal, try to modify it to a similar attack target if possible
+                        Action modifiedAction = null;
+
+                        if (selectedAction.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
+                        {
+                            // Try to find another valid attack target at the same position
+                            List<Action> attackActions = RangeController.getAttackActionList(unit, state);
+
+                            foreach (Action attack in attackActions)
+                            {
+                                // If we can attack from the same position
+                                if (attack.destinationXpos == selectedAction.destinationXpos &&
+                                    attack.destinationYpos == selectedAction.destinationYpos)
+                                {
+                                    if (ActionChecker.isTheActionLegalMove_Silent(attack, state))
+                                    {
+                                        modifiedAction = attack.createDeepClone();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Step 5: If still no valid action, generate a random biased one
+                        if (modifiedAction == null)
+                        {
+                            modifiedAction = actionGenerator.GenerateBiasedAction(unit, state);
+                        }
+
+                        offspringActions.Add(modifiedAction);
+                        state.executeAction(modifiedAction);
+                    }
+                }
+
+                offspring.actionSequence[h] = offspringActions;
+                state.enableUnitsAction(teamColor);
+                state.incTurnCount();
+                SimulateEnemyTurn(state, teamColor == 0 ? 1 : 0);
+                state.enableUnitsAction(teamColor == 0 ? 1 : 0);
+                state.incTurnCount();
             }
-            
+
             return offspring;
         }
         
         // Mutation: Randomly modify an individual's action sequence
         private void Mutate(Individual individual, Map map, int teamColor)
         {
+            Map state = map.createDeepClone();
             // For each step in the horizon
             for (int h = 0; h < HORIZON; h++)
             {
-                // Decide whether to mutate this step
-                if (rnd.NextDouble() < MUTATION_RATE)
+                List<Action> turnActions = individual.actionSequence[h];
+                List<Action> newActions = new List<Action>();
+
+                foreach (Action action in turnActions)
                 {
-                    // Replace with random actions
-                    individual.actionSequence[h] = GenerateRandomActions(map, teamColor);
+                    Unit unit = state.getUnit(action.operationUnitId);
+                    if (unit == null)
+                    {
+                        continue;
+                    }
+
+                    // offspring.actionSequence[h].Add(action.createDeepClone());
+                    Action originalAction = action.createDeepClone();
+                    // With MUTATION_RATE probability, modify this action
+                    if (rnd.NextDouble() < MUTATION_RATE)
+                    {
+                        // Generate a new action for this unit
+                        Action newAction = actionGenerator.GenerateBiasedAction(unit, state);
+                        newActions.Add(newAction);
+                        state.executeAction(newAction);
+                    }
+                    else
+                    {
+                        // Check if the original action is still legal
+                        if (ActionChecker.isTheActionLegalMove_Silent(originalAction, state))
+                        {
+                            newActions.Add(originalAction.createDeepClone());
+                            state.executeAction(originalAction);
+                        }
+                        else
+                        {
+                            // If not legal, generate a new action
+                            Action newAction = actionGenerator.GenerateBiasedAction(unit, state);
+                            newActions.Add(newAction);
+                            state.executeAction(newAction);
+                        }
+                    }
                 }
+
+                // take any other actions that need to be taken.
+                List<Unit> movableUnits = state.getUnitsList(teamColor, false, true, false);
+                foreach (Unit unit in movableUnits)
+                {
+                    // Generate a biased action for each movable unit
+                    Action action = actionGenerator.GenerateBiasedAction(unit, state);
+                    newActions.Add(action);
+                    state.executeAction(action);
+                }
+
+                individual.actionSequence[h] = newActions;
+                state.enableUnitsAction(teamColor);
+                state.incTurnCount();
+                SimulateEnemyTurn(state, teamColor == 0 ? 1 : 0);
+                state.enableUnitsAction(teamColor == 0 ? 1 : 0);
+                state.incTurnCount();
             }
         }
         
@@ -741,96 +994,23 @@ namespace SimpleWars
         // Get the best action from the best individual
         private Action GetBestAction(Individual bestIndividual, Map map, int teamColor)
         {
-            // If the best individual has no actions, return a random action
-            if (bestIndividual.actionSequence[0].Count == 0)
-            {
-                List<Unit> movableUnits = map.getUnitsList(teamColor, false, true, false);
-                
-                if (movableUnits.Count > 0)
-                {
-                    Unit randomUnit = movableUnits[rnd.Next(movableUnits.Count)];
-                    List<Action> actions = M_Tools.getUnitActions(randomUnit, map);
-                    
-                    if (actions.Count > 0)
-                    {
-                        return actions[rnd.Next(actions.Count)];
-                    }
-                }
-                
-                // If no actions are available, return a turn end action
-                return Action.createTurnEndAction();
-            }
-            
-            // Create a list of valid actions from the best individual's first step
-            List<Action> validActions = new List<Action>();
-            
             foreach (Action action in bestIndividual.actionSequence[0])
             {
-                // Skip if the unit no longer exists or has already acted
-                Unit unit = map.getUnit(action.operationUnitId);
-                if (unit == null || unit.isActionFinished() || unit.getTeamColor() != teamColor)
+                if (ActionChecker.isTheActionLegalMove_Silent(action, map))
                 {
-                    continue;
-                }
-                
-                if (action.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
-                {
-                    // For attack actions, verify the target unit still exists
-                    Unit targetUnit = map.getUnit(action.targetUnitId);
-                    if (targetUnit == null)
-                    {
-                        continue;
-                    }
-                    
-                    // Also verify the destination is not occupied by another unit
-                    Unit existingUnit = map.getUnit(action.destinationXpos, action.destinationYpos);
-                    if (existingUnit != null && existingUnit.getID() != action.operationUnitId)
-                    {
-                        continue;
-                    }
-                    
-                    validActions.Add(action);
-                }
-                else if (action.actionType == Action.ACTIONTYPE_MOVEONLY)
-                {
-                    // For move actions, verify the destination is not occupied by another unit
-                    Unit existingUnit = map.getUnit(action.destinationXpos, action.destinationYpos);
-                    if (existingUnit != null && existingUnit.getID() != action.operationUnitId)
-                    {
-                        continue;
-                    }
-                    
-                    validActions.Add(action);
+                    return action;
                 }
                 else
                 {
-                    // Other action types (like turn end) are always valid
-                    validActions.Add(action);
+                    // Console.WriteLine("RHEA: Invalid action found in the best individual."); // only seems to happen when no valid action is found
                 }
             }
-            
-            // If we have valid actions, return the first one (highest priority)
-            if (validActions.Count > 0)
-            {
-                return validActions[0];
-            }
-            
-            // If no valid actions are found, return a random action from a random unit
-            List<Unit> movableUnits2 = map.getUnitsList(teamColor, false, true, false);
-            
-            if (movableUnits2.Count > 0)
-            {
-                Unit randomUnit = movableUnits2[rnd.Next(movableUnits2.Count)];
-                List<Action> actions = M_Tools.getUnitActions(randomUnit, map);
-                
-                if (actions.Count > 0)
-                {
-                    return actions[rnd.Next(actions.Count)];
-                }
-            }
-            
-            // If no actions are available, return a turn end action
-            return Action.createTurnEndAction();
+            Console.WriteLine("RHEA: No valid action found in the best individual.");
+
+            // create a move in place action.
+            List<Unit> movableUnits = new List<Unit>(map.getUnitsList(teamColor, false, true, false));
+            Action moveInPlace = Action.createMoveOnlyAction(movableUnits[0], movableUnits[0].getXpos(), movableUnits[0].getYpos());
+            return moveInPlace;
         }
     }
 }
