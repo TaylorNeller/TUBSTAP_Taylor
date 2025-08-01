@@ -27,12 +27,12 @@ public static class MapGen
     public static string terrain_type = "random";    // "plains" or "random"
     public static string unit_dist     = "unit-list";// "no-cannon", "ground-melee", "inf-tank", "unit-list"
     // public static List<string> unit_list = new List<string> { "infantry", "antiair", "panzer", "cannon", "infantry", "antiair", "panzer", "cannon" };
-    public static List<string> unit_list = new List<string> { "infantry", "infantry", "panzer", "panzer", "cannon", "antiair", "fighter", "attacker", "infantry", "infantry", "panzer", "panzer", "cannon", "antiair", "fighter", "attacker" };
-    public static int n_red = 8;
-    public static int n_blue = 8;
+    public static List<string> unit_list = new List<string> { "infantry", "infantry", "panzer", "panzer", "cannon", "cannon", "antiair", "antiair", "fighter", "attacker", "infantry", "infantry", "panzer", "panzer", "cannon", "cannon", "antiair", "antiair", "fighter", "attacker" };
+    public static int n_red = 10;
+    public static int n_blue = 10;
     public static int seed   = -1;
-    public static int map_x  = 12;
-    public static int map_y  = 12;
+    public static int map_x  = 14;
+    public static int map_y  = 14;
     public static bool map_padded = true;
     public static bool CORNER_BIAS = true;          // Bias unit placement to corners
     public static int n_iters = 50;

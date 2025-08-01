@@ -283,8 +283,8 @@ namespace SimpleWars
             Map stateAfterMutation = prefixState.createDeepClone();
             stateAfterMutation.executeAction(newGene); // TODO: THIS MIGHT BE BAD
 
-            var remainingGreedy = BuildGreedyGenome(stateAfterMutation, teamColor);
-            newGenome.AddRange(remainingGreedy.Actions);
+            var tailActions = RepairGenome(stateAfterMutation, parent.Genome, index, teamColor);
+            newGenome.AddRange(tailActions.Actions);
 
             // cap genome length to original (otherwise sequence keeps growing)
             while (newGenome.Count > parent.Genome.Actions.Count)
@@ -302,6 +302,35 @@ namespace SimpleWars
             parent.Children.Add(child);
             return child;
         }
+
+        private Genome RepairGenome(Map map, Genome pGenome, int index, int teamColor)
+        {
+            var state = map.createDeepClone();
+            var actions = new List<Action>();
+
+            int i = index + 1;
+            while (i < pGenome.Actions.Count)  // in case mutation is at the end of the genome
+            {
+                Action originalAction = pGenome.Actions[i];
+                if (ActionChecker.isTheActionLegalMove_Silent(originalAction, state))
+                {
+                    state.executeAction(originalAction);
+                    actions.Add(originalAction);
+                }
+                else
+                {
+                    Action bestAction = takeGreedyAction(state, teamColor);
+                    if (bestAction == null)
+                        break; // no more legal actions
+                    actions.Add(bestAction);
+                }            
+                i++;    
+            }
+
+            greedyInitLength = actions.Count;
+            return new Genome(actions);
+        }
+
 
         /* ==================================================================
          * ░░  Helper utilities
@@ -329,41 +358,49 @@ namespace SimpleWars
             }
             return clone;
         }
+        private Action takeGreedyAction(Map state, int teamColor)
+        {
+            var movable = state.getUnitsList(teamColor, false, true, false);
+            if (movable.Count == 0) return null;
+
+            Action bestAct = null;
+            double bestVal = double.NegativeInfinity;
+
+            foreach (var u in movable)
+            {
+                var allActs = M_Tools.getUnitActions(u, state);
+                foreach (var act in allActs)
+                {
+                    var tmp = state.createDeepClone();
+                    tmp.executeAction(act);
+                    double val = EvaluateState(tmp, teamColor);
+                    if (val > bestVal)
+                    {
+                        bestVal = val;
+                        bestAct = act;
+                    }
+                }
+            }
+
+            if (bestAct == null) return null; // no legal action found (end of turn)
+
+            state.executeAction(bestAct);
+            return bestAct;
+        }
 
         /// <summary>Greedy helper: build a *complete* turn by repeatedly picking the single action that maximises the immediate heuristic.</summary>
         private Genome BuildGreedyGenome(Map map, int teamColor)
         {
             var state = map.createDeepClone();
             var actions = new List<Action>();
-            
+
             while (true)
             {
-                var movable = state.getUnitsList(teamColor, false, true, false);
-                if (movable.Count == 0) break;
+                Action bestAction = takeGreedyAction(state, teamColor);
+                if (bestAction == null)
+                    break; // no more legal actions
 
-                Action bestAct = null;
-                double bestVal = double.NegativeInfinity;
-
-                foreach (var u in movable)
-                {
-                    var allActs = M_Tools.getUnitActions(u, state);
-                    foreach (var act in allActs)
-                    {
-                        var tmp = state.createDeepClone();
-                        tmp.executeAction(act);
-                        double val = EvaluateState(tmp, teamColor);
-                        if (val > bestVal)
-                        {
-                            bestVal = val;
-                            bestAct = act;
-                        }
-                    }
-                }
-
-                if (bestAct == null) break; // no legal action found (should not happen)
-
-                actions.Add(bestAct);
-                state.executeAction(bestAct);
+                actions.Add(bestAction);
             }
 
             greedyInitLength = actions.Count;

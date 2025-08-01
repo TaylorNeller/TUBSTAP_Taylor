@@ -20,7 +20,7 @@ namespace SimpleWars
         // private const long LIMIT_TIME = 9700;        
         // private const int ELITISM_COUNT = 3;          
         // private const double ATTACK_BIAS = 0.8;       
-        private const int HORIZON = 2;               
+        private const int HORIZON = 1;       // 1 better on larger maps, 2 better on smaller maps        
         private const int POPULATION_SIZE = 30;       
         private const int NUM_GENERATIONS = -1;        
         private const double MUTATION_RATE = 0.4;     // controls mutation rate per action within action sequences

@@ -166,7 +166,7 @@ namespace SimpleWars
                 double value;
                 if (node.Visits == 0)
                 {
-                    value          = EvaluateState(node.State, teamColor);
+                    value = EvaluateState(node.State, teamColor);
                 }
                 else
                 {
@@ -176,7 +176,7 @@ namespace SimpleWars
                 /* Back‑propagation ---------------------------------------- */
                 foreach (var n in path)
                 {
-                    n.Visits     += 1;
+                    n.Visits += 1;
                     n.TotalValue += value;
                 }
             }
@@ -211,18 +211,41 @@ namespace SimpleWars
             /* 1. Determine indices owned by *us* -------------------------------- */
             var ownIndices = new List<int>();
             var tmpState   = baseMap.createDeepClone();
+            int color = teamColor;
             for (int i = 0; i < parent.Genome.Actions.Count; i++)
             {
-                if (tmpState.getTurnColor() == teamColor) ownIndices.Add(i);
+                if (color == teamColor)
+                {
+                    ownIndices.Add(i);
+                }
                 tmpState.executeAction(parent.Genome.Actions[i]);
+                if (tmpState.isAllUnitActionFinished(color))
+                {
+                    color = 1 - color;
+                    tmpState.enableUnitsAction(color);
+                    tmpState.incTurnCount();
+                }
             }
             if (ownIndices.Count == 0) return null; // should not happen
 
             /* 2. Pick random gene to mutate ---------------------------------- */
             int index = ownIndices[rnd.Next(ownIndices.Count)];
 
+            // construct state prefix up to (but not including) the mutated action
             var prefixState = baseMap.createDeepClone();
-            for (int i = 0; i < index; i++) prefixState.executeAction(parent.Genome.Actions[i]);
+            int turn = 0;
+            color = teamColor;
+            for (int i = 0; i < index; i++)
+            {
+                prefixState.executeAction(parent.Genome.Actions[i]);
+                if (prefixState.isAllUnitActionFinished(color))
+                {
+                    color = 1 - color;
+                    prefixState.enableUnitsAction(color);
+                    prefixState.incTurnCount();
+                    turn++;
+                }
+            }
 
             var opUnit = prefixState.getUnit(parent.Genome.Actions[index].operationUnitId);
             if (opUnit == null || opUnit.isActionFinished()) return null;
@@ -239,7 +262,7 @@ namespace SimpleWars
             // Repair tail greedily (flexible horizon)
             var stateAfterMutation = prefixState.createDeepClone();
             stateAfterMutation.executeAction(newGene);
-            var greedyTail = BuildFHGenome(stateAfterMutation, stateAfterMutation.getTurnColor(), HORIZON_TURNS * 2);
+            var greedyTail = RepairFHGenome(stateAfterMutation, parent.Genome, index, stateAfterMutation.getTurnColor(), HORIZON_TURNS * 2 - turn);
             newActs.AddRange(greedyTail.Actions);
 
             /* 4. Trim to original length to keep trees shallow --------------- */
@@ -257,14 +280,85 @@ namespace SimpleWars
             return child;
         }
 
+        private Genome RepairFHGenome(Map map, Genome pGenome, int index, int perspectiveColor, int maxSlices = HORIZON_TURNS * 2)
+        {
+            var actions = new List<Action>();
+            var sim = map.createDeepClone();
+            int slices = 0;
+            int color = perspectiveColor;
+
+            int i = index + 1;
+            while (slices < maxSlices)
+            {
+                if (sim.isAllUnitActionFinished(color))
+                {
+                    color = 1 - color;
+                    slices++;
+                    sim.enableUnitsAction(color);
+                    sim.incTurnCount();
+                    continue;
+                }
+
+
+                var movable = sim.getUnitsList(color, false, true, false);
+                if (movable.Count == 0)
+                {
+                    sim.executeAction(Action.createTurnEndAction());
+                    continue;
+                }
+
+                if (i < pGenome.Actions.Count)
+                {
+                    Action originalAction = pGenome.Actions[i];
+                    if (ActionChecker.isTheActionLegalMove_Silent(originalAction, sim))
+                    {
+                        sim.executeAction(originalAction);
+                        actions.Add(originalAction);
+                        i++;
+                        continue;
+                    }
+                }
+                Action bestAct = null;
+                double bestVal = double.NegativeInfinity;
+
+                foreach (var u in movable)
+                {
+                    var allActs = M_Tools.getUnitActions(u, sim);
+                    foreach (var act in allActs)
+                    {
+                        var tmp = sim.createDeepClone();
+                        tmp.executeAction(act);
+                        double val = EvaluateState(tmp, perspectiveColor);
+                        if (val > bestVal)
+                        {
+                            bestVal = val;
+                            bestAct = act;
+                        }
+                    }
+                }
+
+                // if (bestAct == null)
+                // {
+                //     sim.executeAction(Action.createTurnEndAction());
+                //     continue;
+                // }
+
+                actions.Add(bestAct);
+                sim.executeAction(bestAct);
+                i++;
+            }
+
+            return new Genome(actions);
+        }
+        
         /* ==================================================================
          * ░░  Greedy helper (multi‑turn)
          * ================================================================= */
         private Genome BuildFHGenome(Map map, int perspectiveColor, int maxSlices = HORIZON_TURNS * 2)
         {
             var actions = new List<Action>();
-            var sim     = map.createDeepClone();
-            int slices  = 0;
+            var sim = map.createDeepClone();
+            int slices = 0;
             int color = perspectiveColor;
 
             while (slices < maxSlices)
@@ -325,17 +419,13 @@ namespace SimpleWars
             var clone = origin.createDeepClone();
             foreach (var a in genome.Actions)
             {
-                var unit = clone.getUnit(a.operationUnitId);
-                if (unit == null || unit.isActionFinished() || unit.getTeamColor() != clone.getTurnColor())
-                    continue; // illegal or wrong phase — skip
-
-                if (a.actionType == Action.ACTIONTYPE_MOVEONLY || a.actionType == Action.ACTIONTYPE_MOVEANDATTACK)
-                {
-                    var occ = clone.getUnit(a.destinationXpos, a.destinationYpos);
-                    if (occ != null && occ.getID() != a.operationUnitId) continue;
-                }
-
                 clone.executeAction(a);
+                if (clone.isAllUnitActionFinished(clone.getTurnColor()))
+                {
+                    int nextColor = 1 - clone.getTurnColor();
+                    clone.enableUnitsAction(nextColor);
+                    clone.incTurnCount();
+                }
             }
             return clone;
         }
