@@ -370,7 +370,6 @@ namespace SimpleWars {
 
             // 外に出力したいとき使用する
             using (StreamWriter w = new StreamWriter(fileName,true)) {    
-                // w.WriteLine("idk");    
                 if (writeTitleFlag) {
                     // w.WriteLine("MapName,WinCntOfRed,WinCntOfBlue,DrawCnt,FirstMove");
                     w.WriteLine("map:unitlist:move:result");

@@ -1,3 +1,0 @@
-MapName,RedPlayerName,BluePlayerName,BattleCnt,WinCntOfRed,WinCntOfBlue,DrawCnt,OverTrunCnt,JudgeWinCntOfRed,JudgeWinCntOfBlue,NoiseOfHP,NoiseOfPos
-./map/genmap1.tbsmap,Sample_MaxActionEvalFunc,Sample_MaxActionEvalFunc,50,0,50,0,0,0,0,False,False
-./map/genmap1.tbsmap,Sample_MaxActionEvalFunc,Sample_MaxActionEvalFunc,50,50,0,0,0,0,0,False,False
