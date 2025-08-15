@@ -1,3 +1,4 @@
+from networkx import adjacency_matrix
 from UnitData import *
 from UnitDistanceCalculator import UnitDistanceCalculator
 
@@ -117,16 +118,26 @@ class MapUtils:
 
 
     @staticmethod
-    def create_data_matrices(units, map, max_units, fast=True):
+    def create_data_matrices(units, map, max_units, fast=True, mask=False):
         if fast:
             gcn_input = MapUtils.create_gcn_input_fast(units, map, max_units)
         else:
             gcn_input = MapUtils.calculator.create_gcn_input(units, map, max_units)
+        
+        # take the first matrix (adjacency matrix) and remove the upper left and lower right corners
+        if mask:
+            adjacency_matrix = gcn_input[0]
+            n = len(adjacency_matrix)
+            h = n // 2
+            for i in range(n):
+                for j in range(n):
+                    if (i < h and j < h) or (i >= h and j >= h):
+                        adjacency_matrix[i][j] = 0
+
+
         # gcn_input = dummy_gcn_input(units, map, max_units)
         cnn_input  = MapUtils.create_cnn_input(units, map)    
         return gcn_input + cnn_input
-
-
 
 
 

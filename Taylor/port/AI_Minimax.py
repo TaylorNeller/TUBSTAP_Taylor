@@ -6,17 +6,35 @@ import numpy as np
 from UnitData import *
 # from NNModel import NNModel
 from GCNModel import GCNModel
+from GCNBasicModel import GCNBasicModel
 from CNNModel import CNNModel
+from CNNGraphModel import CNNGraphModel
+from CombinedCNNModel import CombinedCNNModel
+from CombinedModel import CombinedModel
+
+
 import tensorflow as tf
 
 class AI_Minimax(Player):
     # Parameters
     MAX_DEPTH = 2  # Fixed depth for minimax search
+    MAX_UNITS = 6
+    FAST_MATRIX_FORMAT = True
+    MASK_ADJACENCY = False
 
     def __init__(self):
         self.stopwatch = time.time()
-        self.model = GCNModel("plains_unit-list/GCN_M_b128_e20.keras")
-        # self.model = CNNModel("plains_unit-list/CNN_M_b32_e30.keras")
+        # self.model = GCNModel("plains_unit-list/GCN_fast_b128_e30.keras")
+        # self.model = GCNModel("plains_unit-list/GCN_fast_b128_e50.keras")
+        self.model = GCNModel("plains_unit-list/GCN_fast_b128_e75.keras")
+        # self.model = GCNModel("plains_unit-list/GCN_fast_b128_e100.keras")
+        # self.model = CNNModel("plains_unit-list/CNNi_fast_b128_e30.keras")
+        # self.model = CNNModel("plains_unit-list/CNNi_fast_b128_e50.keras")
+        # self.model = CNNGraphModel("plains_unit-list/CNNg_fast_b32_e50.keras")
+        # self.model = CombinedCNNModel("plains_unit-list/CNNc_fast_b32_e50.keras")
+        # self.model = CombinedModel("plains_unit-list/CGNNc_fast_b32_e50.keras")
+        # self.model = GCNBasicModel("plains_unit-list/GCNBasic_M_b128_e20.keras")
+        # self.model = GCNBasicModel("plains_unit-list/GCNBasic_slowM_b128_e50.keras")
         self.model.load_model()
         # self.timing_stats = {
         #     'data_prep': [],
@@ -115,7 +133,6 @@ class AI_Minimax(Player):
     
     def batch_eval(self, final_states):        
         # print('batch_eval start')
-        MAX_UNITS = 6
         # start_time = time.time()
 
         data = [[],[],[],[],[],[],[],[],[],[]]
@@ -123,7 +140,7 @@ class AI_Minimax(Player):
         for state in final_states:
             map_matrix, unit_list, move = self.to_matrix_ulist(state[1], state[0])
 
-            new_mats = MapUtils.create_data_matrices(unit_list, map_matrix, MAX_UNITS, True) 
+            new_mats = MapUtils.create_data_matrices(unit_list, map_matrix, self.MAX_UNITS, self.FAST_MATRIX_FORMAT, self.MASK_ADJACENCY) 
             for i in range(len(new_mats)):
                 data[i].append(new_mats[i])
 

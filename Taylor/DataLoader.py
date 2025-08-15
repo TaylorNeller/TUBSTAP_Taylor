@@ -256,7 +256,7 @@ class DataLoader:
 
         return data, labels
     
-    def load_raw_Cs_output(self, fname, max_units=6):
+    def load_raw_Cs_output(self, fname, max_units=6, fast=True, mask=False):
         # read csv file, delineator :
         raw_df = pd.read_csv(self.active_dir+fname, sep=':')
 
@@ -272,7 +272,7 @@ class DataLoader:
             result = row['result']
 
             # map_matrix, unit_list, move = state
-            new_data = MapUtils.create_data_matrices(unit_list, map_matrix, max_units)
+            new_data = MapUtils.create_data_matrices(unit_list, map_matrix, max_units, fast, mask)
             data.append(new_data)
             labels.append(result)
         return data, labels

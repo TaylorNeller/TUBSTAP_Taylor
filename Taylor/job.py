@@ -13,15 +13,15 @@ from collections import Counter
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'port')))
 import port.GameCLI as GameCLI
 
-def runGames():
+def runGames(games_per_side=10):
     start_time = time.time()
 
     results = []
-    games_per_side = 10
+    
     players = [3, 2]
     for i in range(games_per_side):
         map = MapGen.generate_map_file()
-        # print(map)
+        print(map)
         _, result = GameCLI.run_autobattle(user1=players[0], user2=players[1], map='random_map', games=2, raw_map_str=map)
         results.append(result)
     for i in range(games_per_side):
@@ -31,10 +31,17 @@ def runGames():
         results.append(-result)
     print(results)
     print(np.mean(results))
+    # print the count of each result (-1, 0, 1)
+    print(Counter(results))
+    # print the percentage of each result
+    total_games = len(results)
+    print(f"Win percentage (1): {results.count(1) / total_games * 100:.2f}%")
+    print(f"Win percentage (-1): {results.count(-1) / total_games * 100:.2f}%")
+    print(f"Draw percentage (0): {results.count(0) / total_games * 100:.2f}%")
     print('Time taken to run games: ', time.time() - start_time)
 
-def process_raw_Cs_csv():
-    data, labels = dl.load_raw_Cs_output('raw_Cs_output.csv')
+def process_raw_Cs_csv(fast=True, mask=False):
+    data, labels = dl.load_raw_Cs_output('raw_Cs_output.csv', fast=fast, mask=mask)
     n_eval = int(len(labels)*.1)
 
     data_tail = data[-10000:]
@@ -88,23 +95,46 @@ def process_raw_Cs_csv():
 
     data = dl.transpose(data_head)
     labels = labels_head
-    dl.save_data_cols(data, labels, 'MCTS_train_large-faster.csv')
+    dl.save_data_cols(data, labels, f'MCTS_train_large-{"fast" if fast else "slow"}{"-masked" if mask else ""}.csv')
     data_tensors, label_tensors = dl.tensorize_data(data, labels)
-    dl.save_tensors(data_tensors, label_tensors, 'MCTS_train_large-faster')
+    dl.save_tensors(data_tensors, label_tensors, f'MCTS_train_large-{"fast" if fast else "slow"}{"-masked" if mask else ""}')
     print('Training set: ', len(labels))
 
     data = dl.transpose(data_tail)
     labels = labels_tail
-    dl.save_data_cols(data, labels, 'MCTS_eval_large-faster.csv')
+    dl.save_data_cols(data, labels, f'MCTS_eval_large-{"fast" if fast else "slow"}{"-masked" if mask else ""}.csv')
     data_tensors, label_tensors = dl.tensorize_data(data, labels)
-    dl.save_tensors(data_tensors, label_tensors, 'MCTS_eval_large-faster')
+    dl.save_tensors(data_tensors, label_tensors, f'MCTS_eval_large-{"fast" if fast else "slow"}{"-masked" if mask else ""}')
     print('Test set: ', len(labels))
 
 def train_model():
     # trainer = Trainer('CNN_M_b32_e30.keras', model_type="CNN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
-    trainer = Trainer('GCN_M_b128_e20.keras', model_type="GCN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
-    trainer.train("MCTS_train_large-faster", batch_size=128, epochs=20)
-    trainer.eval("MCTS_eval_large-faster")
+    # trainer = Trainer('GCN_M_b128_e30.keras', model_type="GCN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    trainer = Trainer('GCNBasic_slowM_b128_e50.keras', model_type="GCNBasic", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    trainer.train("MCTS_train_large-slow-masked", batch_size=128, epochs=50)
+    trainer.eval("MCTS_eval_large-slow-masked")
+
+    # trainer = Trainer('GCN_fast_b128_e75.keras', model_type="GCN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    # trainer.train("MCTS_train_large-faster", batch_size=128, epochs=75)
+    # trainer.eval("MCTS_eval_large-faster")
+
+    # trainer = Trainer('CNNi_fast_b128_e30.keras', model_type="CNN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    # trainer.train("MCTS_train_large-faster", batch_size=128, epochs=30)
+    # trainer.eval("MCTS_eval_large-faster")
+
+    # trainer = Trainer('CNNg_fast_b128_e50.keras', model_type="CNNGraph", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    # trainer.train("MCTS_train_large-faster", batch_size=128, epochs=50)
+    # trainer.eval("MCTS_eval_large-faster")
+
+    # trainer = Trainer('CNNc_fast_b128_e50.keras', model_type="CombinedCNN", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    # trainer.train("MCTS_train_large-faster", batch_size=128, epochs=50)
+    # trainer.eval("MCTS_eval_large-faster")
+
+    # trainer = Trainer('CGNNc_fast_b128_e50.keras', model_type="Combined", active_dir='./models/plains_unit-list/', keep_better=False, delete_old=True)
+    # trainer.train("MCTS_train_large-faster", batch_size=128, epochs=50)
+    # trainer.eval("MCTS_eval_large-faster")
+
+
     # trainer.train("MCTS_train_large-fast", batch_size=128, epochs=20)
     # trainer.eval("MCTS_eval_large-fast")
 
@@ -114,9 +144,14 @@ if __name__ == "__main__":
     dl = DataLoader('./models/plains_unit-list/')
     dl.setup_workers(1)
 
-    # process_raw_Cs_csv()
+    # process_raw_Cs_csv(fast=False, mask=True)
+    # process_raw_Cs_csv(fast=True, mask=True)
     # train_model()
-    runGames()
+    runGames(100) 
+
+    # data, labels = dl.load_dataframe('MCTS_train_large-slow-masked.csv')
+    # print(f"1: {int(labels.count(1)*.1)}, -1:{int(labels.count(-1)*.1)}, 0:{int(labels.count(0))}")
+
 
     # t_data, t_labels = dl.load_tensors('good_data_tensors')
     # data, labels = dl.detensorize_data(t_data, t_labels)
@@ -126,16 +161,19 @@ if __name__ == "__main__":
     # dl.save_tensors(data_tensors, label_tensors, 'good_eval')
 
     # data, labels = dl.load_dataframe('100_100_100_data.csv')
-    # calculator = UnitDistanceCalculator()
+    # # calculator = UnitDistanceCalculator()
 
-    # # for index in range(50):
-    # #     map, units = dl.data_to_map_units(data, index)
-    # #     data1 = MapUtils.create_gcn_input_new(units, map, 6)
-    # #     data2 = calculator.create_gcn_input(units, map, 6)
+    # for index in range(1):
+    #     map, units = dl.data_to_map_units(data, index)
+    #     data = MapUtils.create_data_matrices(units, map, 6, fast=True, mask=True)
+    #     data1 = MapUtils.create_gcn_input_new(units, map, 6)
+    #     # data2 = calculator.create_gcn_input(units, map, 6)
 
-    # #     # if the can_access matrices are different, print index
-    # #     if not np.array_equal(data1[0], data2[0]):
-    # #         print(index)
+    #     # if the can_access matrices are different, print index
+    #     if not np.array_equal(data1[0], data[0]):
+    #         # print(index)
+    #         print(data[0])
+    #         print(data1[0])
 
     # map, units = dl.data_to_map_units(data, 13)
     # print(MapUtils.map_to_string(map, units))

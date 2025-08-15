@@ -48,8 +48,8 @@ class CombinedModel(NNModel):
         x_gcn = layers.Concatenate(axis=-1)([x_gcn, concatenated_edge_features])
         x_gcn = GCNConv(self.gcn_layers[1], activation="relu")([x_gcn, adjacency_input])
         x_gcn = layers.Flatten()(x_gcn)
-        x_gcn = layers.Dense(self.dense_layers[0], activation="relu")(x_gcn)
-        x_gcn = layers.Dense(self.dense_layers[1], activation="relu")(x_gcn)
+        # x_gcn = layers.Dense(self.dense_layers[0], activation="relu")(x_gcn)
+        # x_gcn = layers.Dense(self.dense_layers[1], activation="relu")(x_gcn)
         
         # CNN branch
         x_cnn = tf.stack(cnn_inputs, axis=-1)
@@ -67,18 +67,21 @@ class CombinedModel(NNModel):
         x_cnn = layers.MaxPooling2D((2, 2))(x_cnn)
         
         x_cnn = layers.Flatten()(x_cnn)
-        x_cnn = layers.Dense(128, activation='relu')(x_cnn)
-        x_cnn = layers.BatchNormalization()(x_cnn)
-        x_cnn = layers.Dropout(0.5)(x_cnn)
-        x_cnn = layers.Dense(64, activation='relu')(x_cnn)
-        x_cnn = layers.BatchNormalization()(x_cnn)
-        x_cnn = layers.Dropout(0.3)(x_cnn)
+        # x_cnn = layers.Dense(128, activation='relu')(x_cnn)
+        # x_cnn = layers.BatchNormalization()(x_cnn)
+        # x_cnn = layers.Dropout(0.5)(x_cnn)
+        # x_cnn = layers.Dense(64, activation='relu')(x_cnn)
+        # x_cnn = layers.BatchNormalization()(x_cnn)
+        # x_cnn = layers.Dropout(0.3)(x_cnn)
         
         # Combine both branches
         combined = layers.Concatenate()([x_gcn, x_cnn])
         
         # Final dense layers
-        x = layers.Dense(256, activation='relu')(combined)
+        x = layers.Dense(144, activation='relu')(combined)
+        x = layers.BatchNormalization()(x)
+        x = layers.Dropout(0.3)(x)
+        x = layers.Dense(512, activation='relu')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Dropout(0.3)(x)
         outputs = layers.Dense(1, activation='tanh')(x)

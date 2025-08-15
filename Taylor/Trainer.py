@@ -1,10 +1,14 @@
 import time
 import os
+import json
+import matplotlib.pyplot as plt
+
 
 # from NNModel import NNModel
 from CNNModel import CNNModel
 from GCNModel import GCNModel
 from GCN2Model import GCN2Model
+from GCNBasicModel import GCNBasicModel
 from ImprovedGNNModel import ImprovedGNNModel
 from CombinedModel import CombinedModel
 from CombinedCNNModel import CombinedCNNModel
@@ -22,7 +26,8 @@ class Trainer:
         "CombinedCNN": CombinedCNNModel,
         "MPGNN": MPGNNModel,
         "GCN2": GCN2Model,
-        "ImprovedGNN": ImprovedGNNModel
+        "ImprovedGNN": ImprovedGNNModel,
+        "GCNBasic": GCNBasicModel
     }
 
     def __init__(self, model_name, model_type, active_dir=None, keep_better=False, delete_old=False):
@@ -57,6 +62,19 @@ class Trainer:
             with open(log_name, 'a') as f:
                 f.write(str+'\n')
 
+    def graph_training_loss(self, epoch_data, loss_data):
+        plot_name = self.active_dir + self.model_name[:-6] + '.png'
+        # Create and save the plot
+        plt.plot(epoch_data, loss_data)
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training Loss Over Epochs")
+        plt.grid(True)
+
+        # Save the figure to a file (e.g., PNG, JPG, or PDF)
+        plt.savefig(plot_name)  # or .jpg, .pdf, etc.
+        plt.close()
+
     def train(self, training_fname, batch_size, epochs=1):
         self.update_training_log(f"train({training_fname}, {epochs})")
         data, labels = None, None
@@ -66,7 +84,11 @@ class Trainer:
         else:
             data, labels = self.data_loader.load_tensors(training_fname)
         selected_data = self.model.select_data(data)
-        self.model.train(selected_data, labels, batch_size=batch_size, epochs=epochs)
+        loss_data, epoch_data = self.model.train(selected_data, labels, batch_size=batch_size, epochs=epochs)
+        self.graph_training_loss(epoch_data, loss_data)
+        training_losses = {"epochs": epoch_data, "losses": loss_data}
+        self.update_training_log(f"Training Losses: {json.dumps(training_losses)}")
+        
         self.model.save()
 
     def eval(self, eval_fname):

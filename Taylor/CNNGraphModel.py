@@ -14,7 +14,7 @@ class CNNGraphModel(NNModel):
         self.num_edge_features = 3
 
         self.conv_filters = [32, 64]
-        self.dense_layers = [64, 32] 
+        self.dense_layers = [128, 32] 
         
     def create_model(self):
         adjacency_shape = (self.num_nodes, self.num_nodes)

@@ -56,7 +56,8 @@ class NNModel:
 
     def perform_inference(self, inference_input):
         continuous_predictions = self.active_model.predict(inference_input)
-        predicted_classes = np.array([self.interpret_output(x) for x in continuous_predictions.flatten()])
+        predicted_classes = np.array(x for x in continuous_predictions.flatten())
+        # predicted_classes = np.array([self.interpret_output(x) for x in continuous_predictions.flatten()])
         return continuous_predictions, predicted_classes
 
     # eval set already transformed into correct format to load into model
@@ -106,11 +107,22 @@ class NNModel:
 
         callbacks = [lr_callback]
         
-        # Train the model
+        # # Train the model
+        # if verbose:
+        #     self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, callbacks=callbacks)
+        # else:
+        #     self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, verbose=0, callbacks=callbacks)
+        # Train the model and store the training history
         if verbose:
-            self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, callbacks=callbacks)
+            history = self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, callbacks=callbacks)
         else:
-            self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, verbose=0, callbacks=callbacks)
+            history = self.active_model.fit(training_input, training_labels, epochs=epochs, batch_size=batch_size, verbose=0, callbacks=callbacks)
+
+        # Extract losses and epoch numbers
+        losses = history.history.get('loss', [])
+        epoch_list = list(range(1, len(losses) + 1))
+
+        return losses, epoch_list    
 
     def load_model(self, model_name=None):
         # If file {model_fname} exists, load the model from the file
